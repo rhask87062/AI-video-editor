@@ -1,0 +1,450 @@
+/* Styles for App component */
+.card {
+  padding: 1em;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 1em;
+  background-color: white;
+}
+
+.read-the-docs {
+  color: #888;
+  margin-top: 1em;
+}
+
+/* Reset basic styles */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #282c34; /* Darker background */
+  color: #f0f0f0; /* Lighter text */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  height: 100%;
+}
+
+/* App container takes full height and uses flex column */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; /* Prevent scrollbars on main container */
+  border: 1px solid #444; /* DEBUG */
+}
+
+/* Toolbar at the top */
+.toolbar {
+  display: flex; /* Use flexbox for layout */
+  justify-content: space-between; /* Space out items */
+  align-items: center; /* Vertically align items */
+  background-color: #3a3f4a;
+  padding: 5px 10px;
+  flex-shrink: 0; /* Prevent shrinking */
+  border-bottom: 1px solid #444; /* DEBUG */
+}
+
+/* Main content area takes remaining space and uses flex row */
+.main-content {
+  display: flex;
+  flex-grow: 1; /* Takes up remaining vertical space */
+  overflow: hidden; /* Prevent scrollbars on main content */
+  border-bottom: 1px solid #444; /* DEBUG */
+}
+
+/* Left panel for controls and media bin */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  width: 250px; /* Example fixed width */
+  flex-shrink: 0;
+  border-right: 1px solid #444; /* DEBUG */
+  overflow-y: auto; /* Allow scrolling if content overflows */
+  position: relative; /* Establish a stacking context */
+  z-index: 10;      /* Try to lift it above sibling panels */
+}
+
+/* Right panel for preview */
+.right-panel {
+  flex-grow: 1; /* Takes remaining horizontal space */
+  display: flex;
+  flex-direction: column; /* To potentially stack things later */
+  overflow: hidden;
+  position: relative; /* Also establish for fairness, lower z-index */
+  z-index: 5;
+}
+
+/* Generation controls area */
+.generation-controls {
+  padding: 10px;
+  background-color: #333842;
+  border-bottom: 1px solid #444; /* DEBUG */
+}
+
+.generation-controls button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 5px;
+  background-color: #4a4f5a;
+  color: white;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.generation-panel {
+  border: 1px dashed #555;
+  padding: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+}
+
+.generation-panel p {
+  margin: 5px 0;
+}
+
+/* Media bin area */
+.media-bin {
+  padding: 10px;
+  flex-grow: 1; /* Takes remaining space in left panel */
+  background-color: #333842;
+  overflow-y: auto; /* Allow scrolling */
+}
+
+.media-bin h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #555;
+  padding-bottom: 5px;
+}
+
+.media-section {
+  border: 1px dashed #555;
+  padding: 15px 10px;
+  margin-bottom: 10px;
+  /* min-height: 50px; */ /* Let content define height or set specific per section */
+}
+
+/* Specifically target the header wrapper within .media-bin for z-index */
+.media-bin > .section-header-wrapper {
+  position: relative;
+  z-index: 15; /* Higher than .left-panel (10) to ensure its children can use high z-index effectively */
+}
+
+.media-content-placeholder {
+  padding-top: 10px;
+  font-style: italic;
+  color: #aaa;
+}
+
+/* Style for the title placeholder text within media sections */
+.media-section-title-placeholder {
+  margin-top: 8px; /* Space from the button or panel */
+  font-weight: bold;
+  color: #ccc; /* Slightly brighter than regular placeholder text */
+}
+
+/* Preview window area */
+.preview-window {
+  padding: 10px;
+  flex-grow: 1; /* Takes remaining space in right panel */
+  background-color: #1e1e1e; /* Darker for preview */
+  display: flex; /* Center content potentially */
+  align-items: center;
+  justify-content: center;
+  overflow: auto; /* Allow scrolling */
+  /* Ensure no explicit z-index here unless absolutely necessary and coordinated */
+}
+
+.view-switcher {
+  /* Styles for the view switching buttons */
+}
+
+.view-switcher button {
+  margin-left: 5px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.view-switcher button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Concept view specific styles */
+.concept-view-container {
+  display: grid;
+  /* Reset to explicit 3 tracks, middle flexible */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 5px; 
+  padding: 5px; 
+  flex-grow: 1; 
+  overflow: hidden; 
+  height: 100%; 
+  position: relative; 
+}
+
+.concept-column {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #444; 
+  background-color: #3a3f4a; 
+  /* overflow: hidden; */ /* Keep commented out for button visibility */
+  position: relative; 
+  transition: width 0.3s ease, max-width 0.3s ease, opacity 0.3s ease, padding 0.3s ease, border 0.3s ease; 
+  min-width: 0; 
+  width: 250px; 
+}
+
+.concept-column.storyboard-column {
+  width: auto; 
+  grid-column: 2 / 3; 
+  background-color: #333842; 
+  /* Remove previous margin attempt */
+}
+
+/* Remove storyboard content padding rules - we are not doing the overlap now */
+/*
+.concept-view-container.scripting-collapsed .storyboard-column .concept-content {
+  padding-left: 35px; 
+}
+.concept-view-container.moodboard-collapsed .storyboard-column .concept-content {
+  padding-right: 35px; 
+}
+*/
+
+/* Style for the collapsed state */
+.concept-column.collapsed {
+  width: 0;
+  max-width: 0; 
+  padding: 0;
+  border-width: 0;
+  opacity: 0;
+  overflow: hidden; /* OK to hide overflow when fully collapsed */
+  pointer-events: none;
+  min-width: 0;
+}
+
+.concept-column h3 {
+  margin: 0;
+  padding: 6px 8px 16px 8px; /* Adjusted padding: top, horizontal, bottom */
+  background-color: #3a3f4a;
+  border-bottom: 1px solid #444;
+  font-size: 0.9em; 
+  flex-shrink: 0; 
+  white-space: nowrap; 
+  z-index: 1;
+  display: flex; 
+  align-items: center; /* This should vertically center the text and help align the button */
+  position: relative; /* Ensure it's a positioning context for the absolute button */
+}
+
+.concept-column-header-wrapper {
+  display: flex;
+  justify-content: space-between; /* Pushes h3 left, icon right */
+  align-items: center; /* Vertically aligns h3 text and icon */
+  padding: 6px 8px 16px 8px; /* Same padding as h3 previously */
+  background-color: #3a3f4a; /* Same background */
+  border-bottom: 1px solid #444; /* Same border */
+}
+
+.concept-column-header-wrapper h3 {
+  margin: 0; /* Remove default h3 margin */
+  padding: 0; /* Padding is on the wrapper now */
+  border-bottom: none; /* Border is on the wrapper */
+  font-size: 0.9em; 
+  white-space: nowrap; 
+  flex-grow: 1; /* Allow h3 to take available space */
+}
+
+.info-icon {
+  font-size: 0.8em;
+  color: #ccc;
+  margin-left: 8px;
+  cursor: help;
+  padding: 2px 4px;
+  border-radius: 50%;
+  background-color: rgba(255,255,255,0.1);
+}
+
+.info-icon-container {
+  display: flex; /* Align icon and label horizontally */
+  flex-direction: column; /* Stack icon above label */
+  align-items: center; /* Center items if icon and label have different widths */
+  text-align: center;
+  position: relative; /* Needed for z-index to apply effectively */
+  z-index: 100;     /* Higher than its immediate panel, trying to ensure its tooltip child also gets priority */
+}
+
+.dev-notes-label {
+  font-size: 0.6em; /* Very small */
+  color: #aaa;     /* Subdued color */
+  margin-top: -2px; /* Adjust to pull it closer under the icon */
+  display: block;   /* Ensure it takes its own line if needed */
+}
+
+.concept-content {
+  padding: 10px;
+  flex-grow: 1;
+  overflow: auto; 
+}
+
+/* Collapse/Expand Buttons */
+.collapse-button { /* This is the button INSIDE the expanded header */
+  position: absolute;
+  top: 50%; /* Center vertically within the h3 */
+  transform: translateY(-50%); /* Actual centering */
+  background-color: transparent; 
+  color: white;
+  border: none; 
+  padding: 1px 3px; /* Minimal padding, size dictated by h3 */
+  font-size: 0.9em; /* Match expand-button font size */
+  cursor: pointer;
+  z-index: 20; 
+  /* The parent h3 is display:flex and align-items:center, so the button top should align with text line */
+  /* If icon needs further centering within button, add display:flex; align-items:center here too */
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+}
+.collapse-button.left { right: 0; } /* Position to the far right of h3 */
+.collapse-button.right { left: 0; } /* Position to the far left of h3 */
+
+.moodboard-column h3 {
+  padding-left: 35px; 
+  position: relative; 
+  z-index: 1;
+  display: flex; 
+  align-items: center;
+  /* No need for separate padding rules if general h3 is handled */
+}
+
+.scripting-column h3 {
+  padding-right: 35px; /* Maintain space for internal button */
+}
+
+/* Expand buttons remain styled as tabs, positioned near container edge */
+.expand-button { /* This is the TAB when the column is collapsed */
+  position: absolute; 
+  top: 8px; /* Master vertical position - should align with top of h3 */
+  z-index: 15; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #3a3f4a; 
+  color: white;
+  border: 1px solid #444; 
+  border-bottom: none; /* Tab should not have a bottom border here */
+  padding: 6px 10px 16px 10px; /* Added ~10px to bottom padding */
+  font-size: 0.9em; /* Match h3 font-size */
+  cursor: pointer;
+  border-radius: 5px 5px 0 0; 
+  opacity: 1; 
+  transition: background-color 0.2s ease;
+  /* Ensure height consistency with h3 + border */
+  /* The total height of h3 is padding-top + padding-bottom + line-height. */
+  /* Let's aim for a box-sizing consistency if possible or explicit height. */
+  /* For now, matching padding and font-size is the primary goal. */
+}
+
+.expand-button:hover {
+  background-color: #4a4f5a;
+}
+
+.expand-button.left {
+  left: 0; 
+  border-left: none;
+  border-radius: 0 5px 0 0; 
+}
+
+.expand-button.right {
+  right: 0; 
+  border-right: none;
+  border-radius: 5px 0 0 0; 
+}
+
+/* Remove old concept styles if they exist */
+.concept-section {
+  display: none; /* Hide old class if still present */
+}
+
+/* Timeline at the bottom */
+.timeline {
+  background-color: #3a3f4a;
+  height: 150px; /* Example fixed height */
+  flex-shrink: 0; /* Prevent shrinking */
+  padding: 10px;
+  overflow: auto; /* Allow scrolling */
+}
+
+/* Style for generation toggles within concept view columns */
+.generation-toggle-button.concept-gen-toggle {
+  width: auto; /* Don't force full width */
+  display: inline-block; /* Allow inline display */
+  margin-bottom: 10px;
+}
+
+.scripting-column h3 {
+  padding-right: 35px; /* Maintain space for internal button */
+}
+
+.moodboard-column h3 {
+  padding-left: 35px; /* Maintain space for internal button */
+  position: relative; 
+  z-index: 1;
+  display: flex; 
+  align-items: center;
+}
+
+.assets-column h3 {
+  /* Can add specific styles if different from other concept columns later */
+}
+
+/* Basic placeholder style for Scripting View */
+.scripting-view-container {
+  padding: 20px;
+  flex-grow: 1;
+  overflow-y: auto;
+  text-align: center; /* Example styling */
+}
+
+/* Remove padding overrides for specific column H3s as it's handled by wrapper now */
+.scripting-column h3,
+.assets-column h3 {
+  /* padding handled by wrapper and icon spacing */
+}
+
+.moodboard-column h3 {
+  /* padding handled by wrapper and icon spacing */
+  position: relative; 
+  z-index: 1;
+  display: flex; 
+  align-items: center;
+}
+
+.section-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px; /* Example spacing */
+}
+
+.section-header-wrapper h4,
+.section-header-wrapper h5,
+.section-header-wrapper h2 {
+  margin: 0; /* Remove default margins from headers */
+  flex-grow: 1; /* Allow header text to take space */
+}
+
+.mini-info-icon {
+  font-size: 0.7em;
+  padding: 1px 2px;
+  margin-left: 5px;
+  vertical-align: middle; /* Align with button text */
+  /* Inherits .info-icon styles for color, background if DevTooltip applies it */
+} 

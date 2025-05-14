@@ -1,0 +1,29 @@
+.dev-tooltip-wrapper {
+  position: relative; /* Needed for absolute positioning of the tooltip content */
+  display: inline-block; /* Good for wrapping icons */
+  cursor: help; /* Indicate it provides info */
+  z-index: 999; /* Give wrapper a z-index too, just below tooltip content */
+}
+
+.dev-tooltip-content {
+  position: absolute;
+  /* JS will set top, left, right. Start with opacity 0 to prevent FOUC */
+  opacity: 0;
+  transition: opacity 0.1s ease-in; /* Fade in once positioned */
+  padding: 8px 12px;
+  background-color: #fff2b2; /* Light yellow, stands out */
+  color: #333; /* Dark text for readability */
+  border: 1px solid #f0c000; /* Yellowish border */
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  font-size: 0.85em;
+  z-index: 10000; /* Drastically increase z-index */
+  width: max-content; /* Adjust width to content, up to a max */
+  max-width: 300px;
+  text-align: left;
+  white-space: pre-wrap; /* Respect newlines in the note */
+}
+
+.dev-tooltip-content strong {
+  color: #c78100;
+} 

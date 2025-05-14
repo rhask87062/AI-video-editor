@@ -27,10 +27,10 @@
 
 ## Phase 1: Foundational Setup & Core UI
 
-*   `[ ]` Set up basic Electron project structure.
-*   `[ ]` Implement basic window management.
-*   `[ ]` Set up React framework within Electron.
-*   `[ ]` Design and implement core UI layout (Placeholder for: Media Bin, Timeline, Preview Window, Generation Controls).
+*   `[x]` Set up basic Electron project structure (`package.json`, `main.js`, `index.html`, install Electron).
+*   `[x]` Implement basic window management (in `main.js`).
+*   `[x]` Set up React framework within Electron (using Vite).
+*   `[x]` Design and implement core UI layout (Placeholder structure in `App.jsx` and `App.css`).
 *   `[ ]` Set up communication bridge (IPC) between Frontend and Electron Main Process.
 *   `[ ]` Set up placeholder Python backend communication (e.g., simple local API endpoint or script execution).
 
@@ -64,6 +64,12 @@
 *   `[ ]` Advanced Audio Mixing.
 *   `[ ]` LLM Integration (Scripting/Storyboarding).
 *   `[ ]` User Authentication (if cloud features added).
+*   `[-]` Implement Development Tooltips mechanism (Basic component created, integrated with one element).
+*   `[ ]` UI Polish: Revisit Concept View sidebar collapse/expand animations (slide-over effect).
+
+## Pre-Release Checklist (Future)
+
+*   `[ ]` CRITICAL: Remove all Development Tooltip rendering code.
 
 ## Known Issues / Blockers
 
