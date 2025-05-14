@@ -9,14 +9,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
 
   // Example for one-way send (Renderer to Main), if needed later
-  // send: (channel, data) => ipcRenderer.send(channel, data),
+  send: (channel, data) => ipcRenderer.send(channel, data),
 
   // Example for receiving events from Main (Main to Renderer), if needed later
-  // on: (channel, func) => {
-  //   // Deliberately strip event sender from being exposed to renderer
-  //   ipcRenderer.on(channel, (event, ...args) => func(...args));
-  // }
-  // TODO: Later, specifically expose channels like 'llm-generate-script' if we want stricter channel validation here.
+  on: (channel, func) => {
+    const validChannels = ['open-api-key-settings']; // Whitelist channels
+    if (validChannels.includes(channel)) {
+      ipcRenderer.on(channel, (event, ...args) => func(...args));
+    }
+  },
+
+  // Specifically expose channels we intend to use for clarity and potential future validation
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  pingPythonBackend: () => ipcRenderer.invoke('ping-python-backend'),
+  generateLlmScript: (data) => ipcRenderer.invoke('llm-generate-script', data),
+  saveApiKey: (data) => ipcRenderer.send('save-api-key', data), // send for save, no response needed by UI beyond confirmation
+  getApiKey: (serviceName) => ipcRenderer.invoke('get-api-key', serviceName),
+  validateApiKey: (data) => ipcRenderer.invoke('validate-api-key', data)
 });
 
 // You can also expose other Node.js modules or utility functions here if needed,

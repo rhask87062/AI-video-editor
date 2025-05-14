@@ -15,6 +15,60 @@ function App() {
   const [isMoodboardImageGenVisible, setIsMoodboardImageGenVisible] = useState(false);
   const [appVersion, setAppVersion] = useState('N/A');
   const [pythonResponse, setPythonResponse] = useState('N/A'); // New state for Python response
+  const [scriptPrompt, setScriptPrompt] = useState('');
+  const [generatedScript, setGeneratedScript] = useState('');
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [showApiKeySettings, setShowApiKeySettings] = useState(false);
+  const [anthropicApiKey, setAnthropicApiKey] = useState('');
+  const [apiKeyValidationStatus, setApiKeyValidationStatus] = useState(''); // For validation message
+  const [isKeyValidating, setIsKeyValidating] = useState(false); // For disabling button
+  const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+
+  // Listen for event from main process to open API key settings
+  useEffect(() => {
+    if (window.electronAPI && window.electronAPI.on) {
+      window.electronAPI.on('open-api-key-settings', () => {
+        console.log('Renderer: Received open-api-key-settings');
+        setApiKeyValidationStatus(''); // Reset validation status when opening
+        setIsKeyValidating(false);
+        window.electronAPI.getApiKey('ANTHROPIC_API_KEY').then(key => {
+          if (key) setAnthropicApiKey(key);
+          else setAnthropicApiKey(''); // Clear if no key was stored
+        });
+        setShowApiKeySettings(true);
+      });
+    }
+    // Clean up listener if component unmounts, though App usually doesn't
+    // return () => { /* ipcRenderer.removeAllListeners(...) if needed, but electronAPI.on is safer */ };
+  }, []);
+
+  const handleSaveAnthropicKey = async () => {
+    if (window.electronAPI && anthropicApiKey.trim()) {
+      setIsKeyValidating(true);
+      setApiKeyValidationStatus('Validating key...');
+      try {
+        const validationResult = await window.electronAPI.validateApiKey({ 
+          serviceName: 'ANTHROPIC_API_KEY', 
+          apiKey: anthropicApiKey 
+        });
+
+        if (validationResult.success) {
+          setApiKeyValidationStatus('Key is valid! Saving...');
+          window.electronAPI.saveApiKey({ serviceName: 'ANTHROPIC_API_KEY', apiKey: anthropicApiKey });
+          alert('Anthropic API Key saved successfully!\nRestart Python server if it was relying on environment variables before.');
+          setShowApiKeySettings(false);
+        } else {
+          setApiKeyValidationStatus(`Invalid Key: ${validationResult.error || 'Unknown validation error.'}`);
+        }
+      } catch (error) {
+        console.error('Error during API key validation or save:', error);
+        setApiKeyValidationStatus(`Error: ${error.message || 'Could not validate or save key.'}`);
+      }
+      setIsKeyValidating(false);
+    } else if (!anthropicApiKey.trim()){
+        setApiKeyValidationStatus('API Key cannot be empty.');
+    }
+  };
 
   // Function to test IPC
   const handleGetAppVersion = async () => {
@@ -53,6 +107,37 @@ function App() {
     } else {
       console.warn('electronAPI is not available on window object.');
       setPythonResponse('IPC Unavailable');
+    }
+  };
+
+  const handleGenerateScript = async () => {
+    if (!scriptPrompt.trim()) {
+      alert('Please enter a script prompt.');
+      return;
+    }
+    if (window.electronAPI) {
+      setIsGeneratingScript(true);
+      setGeneratedScript('Generating script...');
+      try {
+        const modelToUse = 'claude-3-5-sonnet-20240620';
+        const result = await window.electronAPI.generateLlmScript({ 
+          prompt: scriptPrompt, 
+          modelIdentifier: modelToUse 
+        });
+        console.log('Renderer: LLM script response:', result);
+        if (result.success && result.data && result.data.script) {
+          setGeneratedScript(result.data.script);
+        } else {
+          setGeneratedScript(`Error generating script: ${result.error || 'Unknown error'}\nDetails: ${JSON.stringify(result.data, null, 2)}`);
+        }
+      } catch (error) {
+        console.error('Error invoking generateLlmScript:', error);
+        setGeneratedScript(`IPC Error: ${error.message}`);
+      }
+      setIsGeneratingScript(false);
+    } else {
+      console.warn('electronAPI is not available on window object.');
+      setGeneratedScript('IPC Unavailable for LLM script generation.');
     }
   };
 
@@ -265,17 +350,82 @@ function App() {
         <h2>Scripting & Notes View</h2>
         <DevTooltip note={notes.scriptingEditor}><span className="info-icon-container"><span className="info-icon">&#x24D8;</span><span className="dev-notes-label">Dev Notes</span></span></DevTooltip>
       </div>
-      <p>Collaborative AI text editor placeholder (like a canvas).</p>
+      <p>Enter a prompt below to generate a script using an external LLM.</p>
       
-      <div style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px' }}>
-        <button onClick={handleGetAppVersion}>Get App Version (IPC Test)</button>
-        <p>App Version: {appVersion}</p>
+      <div className="script-generation-area" style={{ margin: '20px 0', padding: '10px', border: '1px solid #555' }}>
+        <textarea 
+          value={scriptPrompt} 
+          onChange={(e) => setScriptPrompt(e.target.value)} 
+          placeholder="Enter your script idea or prompt here... e.g., A short scene about two astronauts discovering a mysterious alien artifact on Mars."
+          rows={5}
+          style={{ width: '98%', marginBottom: '10px', padding: '5px' }}
+          disabled={isGeneratingScript}
+        />
+        <button onClick={handleGenerateScript} disabled={isGeneratingScript}>
+          {isGeneratingScript ? 'Generating...' : 'Generate Script (via LLM)'}
+        </button>
       </div>
 
-      {/* Test Python IPC Button */}
-      <div style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+      {generatedScript && (
+        <div className="generated-script-display" style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+          <h4>Generated Script:</h4>
+          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', backgroundColor: '#222', padding: '10px', borderRadius: '4px' }}>
+            {generatedScript}
+          </pre>
+        </div>
+      )}
+
+      {/* IPC Test Buttons - can be kept or removed */}
+      <div style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px', opacity: 0.5 }}>
+        <button onClick={handleGetAppVersion}>Get App Version (IPC Test)</button>
+        <p style={{fontSize: '0.8em'}}>App Version: {appVersion}</p>
         <button onClick={handlePingPython}>Ping Python Backend (IPC Test)</button>
-        <p>Python Response: <pre>{pythonResponse}</pre></p>
+        <p style={{fontSize: '0.8em'}}>Python Response: <pre style={{fontSize: '0.8em'}}>{pythonResponse}</pre></p>
+      </div>
+    </div>
+  );
+
+  const renderApiKeySettings = () => (
+    <div className="modal-overlay">
+      <div className="modal-content api-key-settings">
+        <h3>API Key Settings</h3>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+          <label htmlFor="anthropicKey" style={{ flexShrink: 0, marginRight: '10px' }}>Anthropic API Key:</label>
+          <input 
+            type={showAnthropicKey ? 'text' : 'password'} 
+            id="anthropicKey" 
+            value={anthropicApiKey}
+            onChange={(e) => setAnthropicApiKey(e.target.value)}
+            placeholder="sk-ant-..."
+            style={{ width: '100%', flexGrow: 1 }} /* Let input take available space */
+            disabled={isKeyValidating}
+          />
+          <button 
+            onClick={() => setShowAnthropicKey(!showAnthropicKey)} 
+            style={{ marginLeft: '10px', padding: '6px 8px', fontSize: '0.8em' }}
+            disabled={isKeyValidating}
+          >
+            {showAnthropicKey ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        {apiKeyValidationStatus && (
+          <p style={{ 
+            marginTop: '10px', 
+            color: apiKeyValidationStatus.startsWith('Invalid') || apiKeyValidationStatus.startsWith('Error') || apiKeyValidationStatus.startsWith('API Key cannot') || apiKeyValidationStatus.includes('credit balance') ? '#ff6b6b' : '#66bb6a', 
+            fontSize: '0.9em' 
+          }}>
+            {apiKeyValidationStatus}
+          </p>
+        )}
+        <div style={{marginTop: '20px'}}>
+          <button onClick={handleSaveAnthropicKey} disabled={isKeyValidating}>
+            {isKeyValidating ? 'Validating & Saving...' : 'Save Key'}
+          </button>
+          <button onClick={() => { setShowApiKeySettings(false); setApiKeyValidationStatus(''); }} style={{marginLeft: '10px'}} disabled={isKeyValidating}>
+            Cancel
+          </button>
+        </div>
+        <p style={{fontSize: '0.8em', marginTop: '15px'}}>API keys are stored locally. The application will use these keys for API calls. Ensure you have the necessary permissions for the models you intend to use.</p>
       </div>
     </div>
   );
@@ -308,6 +458,7 @@ function App() {
       {currentView === 'editor' && renderEditorView()}
       {currentView === 'concept' && renderConceptView()}
       {currentView === 'scripting' && renderScriptingView()}
+      {showApiKeySettings && renderApiKeySettings()}
     </div>
   );
 }
