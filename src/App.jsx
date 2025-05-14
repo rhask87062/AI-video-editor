@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // import reactLogo from './assets/react.svg' // Example asset import
 // import viteLogo from '/vite.svg' // Example asset import
 import './App.css';
@@ -13,6 +13,48 @@ function App() {
   const [isMoodboardCollapsed, setIsMoodboardCollapsed] = useState(false);
   const [isConceptImageGenVisible, setIsConceptImageGenVisible] = useState(false);
   const [isMoodboardImageGenVisible, setIsMoodboardImageGenVisible] = useState(false);
+  const [appVersion, setAppVersion] = useState('N/A');
+  const [pythonResponse, setPythonResponse] = useState('N/A'); // New state for Python response
+
+  // Function to test IPC
+  const handleGetAppVersion = async () => {
+    if (window.electronAPI) {
+      try {
+        const version = await window.electronAPI.invoke('get-app-version');
+        console.log('Renderer: App version received:', version);
+        setAppVersion(version);
+      } catch (error) {
+        console.error('Error invoking get-app-version:', error);
+        setAppVersion('Error');
+      }
+    } else {
+      console.warn('electronAPI is not available on window object. Ensure preload script is working.');
+      setAppVersion('Unavailable');
+    }
+  };
+
+  // New function to test Python backend IPC
+  const handlePingPython = async () => {
+    if (window.electronAPI) {
+      try {
+        console.log('Renderer: Sending ping to Python backend...');
+        setPythonResponse('Pinging...');
+        const result = await window.electronAPI.invoke('ping-python-backend');
+        console.log('Renderer: Python backend response:', result);
+        if (result.success) {
+          setPythonResponse(JSON.stringify(result.data, null, 2));
+        } else {
+          setPythonResponse(`Error: ${result.error} - Data: ${JSON.stringify(result.data, null, 2) || 'N/A'}`);
+        }
+      } catch (error) {
+        console.error('Error invoking ping-python-backend:', error);
+        setPythonResponse('IPC Error');
+      }
+    } else {
+      console.warn('electronAPI is not available on window object.');
+      setPythonResponse('IPC Unavailable');
+    }
+  };
 
   const notes = {
     imageAssets: "Left sidebar (Concept View) for generating and managing image assets for storyboarding. Supports dragging to storyboard. Future: Filter/search assets.",
@@ -221,15 +263,20 @@ function App() {
     <div className="scripting-view-container">
       <div className="section-header-wrapper">
         <h2>Scripting & Notes View</h2>
-        <DevTooltip note={notes.scriptingEditor}>
-          <span className="info-icon-container">
-            <span className="info-icon">&#x24D8;</span>
-            <span className="dev-notes-label">Dev Notes</span>
-          </span>
-        </DevTooltip>
+        <DevTooltip note={notes.scriptingEditor}><span className="info-icon-container"><span className="info-icon">&#x24D8;</span><span className="dev-notes-label">Dev Notes</span></span></DevTooltip>
       </div>
       <p>Collaborative AI text editor placeholder (like a canvas).</p>
-      {/* Add more structure here later */}
+      
+      <div style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+        <button onClick={handleGetAppVersion}>Get App Version (IPC Test)</button>
+        <p>App Version: {appVersion}</p>
+      </div>
+
+      {/* Test Python IPC Button */}
+      <div style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+        <button onClick={handlePingPython}>Ping Python Backend (IPC Test)</button>
+        <p>Python Response: <pre>{pythonResponse}</pre></p>
+      </div>
     </div>
   );
 

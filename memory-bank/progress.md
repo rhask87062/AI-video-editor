@@ -31,8 +31,8 @@
 *   `[x]` Implement basic window management (in `main.js`).
 *   `[x]` Set up React framework within Electron (using Vite).
 *   `[x]` Design and implement core UI layout (Placeholder structure in `App.jsx` and `App.css`).
-*   `[ ]` Set up communication bridge (IPC) between Frontend and Electron Main Process.
-*   `[ ]` Set up placeholder Python backend communication (e.g., simple local API endpoint or script execution).
+*   `[x]` Set up communication bridge (IPC) between Frontend and Electron Main Process (using preload script, basic test implemented).
+*   `[x]` Set up placeholder Python backend communication (FastAPI server created, Electron main process can call it via IPC, basic test in UI).
 
 ## Phase 2: Video Editing Basics
 
