@@ -6,8 +6,8 @@ import { commonmark } from '@milkdown/preset-commonmark';
 import { history } from '@milkdown/plugin-history';
 import '@milkdown/theme-nord/style.css';
 
-// Basic initial markdown content
-const initialMarkdown = '# Milkdown Experiment\n\nHello, Milkdown!\n\n*   Start typing here...\n*   **Bold text**\n*   *Italic text*';
+// Basic initial markdown content - now empty
+const initialMarkdown = '';
 
 // Define SCRIPT_MODELS (can be expanded later)
 const SCRIPT_MODELS = [
@@ -75,6 +75,10 @@ function App() {
       const aiMessage = { sender: 'ai', text: aiResponseText };
       setChatMessages(prevMessages => [...prevMessages, aiMessage]);
       setIsGeneratingScript(false);
+      // Auto-open chat panel if it's not already open when AI responds
+      if (!isChatPanelOpen) {
+        setIsChatPanelOpen(true);
+      }
     }, 1000);
 
     setPromptText(''); // Clear prompt input after sending
@@ -135,8 +139,8 @@ function App() {
               title="Click to change LLM model"
               style={{
                 position: 'absolute',
-                bottom: '8px', // Adjusted to align with settings cog typically
-                left: '10px',
+                bottom: '8px',
+                left: '25px', // New position: To the right of settings cog
                 zIndex: 2,
                 // Styling from .model-selector-button in CSS will be primary
               }}
@@ -179,8 +183,8 @@ function App() {
               title="Edit text generation settings..."
               style={{
                 position: 'absolute',
-                bottom: '6px', // Fine-tune position
-                left: '130px', // Position to the right of model selector
+                bottom: '6px', 
+                left: '3px', // New position: Far left
                 zIndex: 2,
                 // Styling from .settings-cog-button in CSS will be primary
               }}
