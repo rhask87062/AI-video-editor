@@ -3,8 +3,7 @@ import { Editor, rootCtx, defaultValueCtx } from '@milkdown/core';
 import { nord } from '@milkdown/theme-nord';
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react';
 import { commonmark } from '@milkdown/preset-commonmark';
-import { history, undoCommand, redoCommand } from '@milkdown/plugin-history';
-import { callCommand } from '@milkdown/utils';
+import { history } from '@milkdown/plugin-history';
 import '@milkdown/theme-nord/style.css';
 
 // Basic initial markdown content
@@ -12,7 +11,7 @@ const initialMarkdown = '# Milkdown Experiment\n\nHello, Milkdown!\n\n*   Start 
 
 // Reinstating EditorComponent
 const EditorComponent = () => {
-  const { editor, getInstance } = useEditor((root) =>
+  useEditor((root) => 
     Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root);
@@ -23,43 +22,13 @@ const EditorComponent = () => {
       .use(history)
   );
 
-  const handleUndo = () => {
-    const editorInstance = getInstance();
-    if (editorInstance) {
-      editorInstance.action(callCommand(undoCommand.key));
-    }
-  };
-
-  const handleRedo = () => {
-    const editorInstance = getInstance();
-    if (editorInstance) {
-      editorInstance.action(callCommand(redoCommand.key));
-    }
-  };
-
-  return (
-    <>
-      <div style={{ marginBottom: '10px' }}>
-        <button onClick={handleUndo} style={{ marginRight: '5px' }}>Undo</button>
-        <button onClick={handleRedo}>Redo</button>
-      </div>
-      <Milkdown />
-    </>
-  );
+  return <Milkdown />;
 };
 
 function App() {
-  // const [themeMode, setThemeMode] = useState('dark'); // Theme toggle removed for now
+  const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
   const [promptText, setPromptText] = useState('');
   const textareaRef = useRef(null);
-
-  // useEffect(() => {
-  //   document.body.setAttribute('data-theme', themeMode);
-  // }, [themeMode]);
-
-  // const toggleTheme = () => {
-  //   setThemeMode((prevMode) => (prevMode === 'dark' ? 'light' : 'dark'));
-  // };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -68,6 +37,10 @@ function App() {
     }
   }, [promptText]);
 
+  const toggleChatPanel = () => {
+    setIsChatPanelOpen(!isChatPanelOpen);
+  };
+
   const handlePromptChange = (event) => {
     setPromptText(event.target.value);
   };
@@ -75,16 +48,27 @@ function App() {
   return (
     <MilkdownProvider>
       <div className="app-layout">
-        {/* Header div can be removed or left empty if no header content is needed for the experiment now */}
-        {/* <div className="app-header"> */}
-          {/* <button onClick={toggleTheme} style={{ marginRight: '10px' }}> */}
-          {/*   Switch to {themeMode === 'dark' ? 'Light' : 'Dark'} Mode */}
-          {/* </button> */}
-          {/* <h1>Milkdown Editor</h1> */}
-        {/* </div> */}
+        <div className="app-header">
+          {/* Minimal header content, or remove app-header div if truly empty */}
+        </div>
         
-        <div className="milkdown-editor-wrapper">
-          <EditorComponent />
+        <div className="main-content-area">
+          {isChatPanelOpen && (
+            <div className="chat-panel">
+              <p>Chat Panel Content...</p>
+            </div>
+          )}
+
+          <div className="milkdown-editor-wrapper">
+            <EditorComponent />
+          </div>
+
+          <button 
+            onClick={toggleChatPanel} 
+            className={`chat-toggle-button ${isChatPanelOpen ? 'open' : ''}`}
+          >
+            {isChatPanelOpen ? '<' : '>'}
+          </button>
         </div>
 
         <div className="prompt-input-area">

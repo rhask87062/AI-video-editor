@@ -79,28 +79,46 @@ body[data-theme="light"] {
   font-size: 1.5em;
 }
 
-/* New wrapper for the Milkdown editor component to control its flex behavior */
+.main-content-area {
+  display: flex; /* Lays out chat panel and editor wrapper side-by-side */
+  flex-direction: row; /* Children will be side-by-side */
+  flex-grow: 1; /* Takes up space between header and prompt area */
+  min-height: 0; /* Important for nested flex containers */
+  position: relative; /* For positioning the toggle button absolutely */
+  overflow: hidden; /* Prevent its own scrollbars */
+}
+
+.chat-panel {
+  width: 33%; /* Approximately 1/3 of the .main-content-area */
+  background-color: var(--color-nord2); /* Slightly different background */
+  border-right: 1px solid var(--color-nord3);
+  padding: 15px;
+  box-sizing: border-box;
+  overflow-y: auto; /* Scroll for chat content */
+  transition: width 0.3s ease; /* Smooth slide-in/out */
+  /* When hidden, we could set width to 0 or use a transform */
+}
+
 .milkdown-editor-wrapper {
-  flex-grow: 1; 
+  flex-grow: 1; /* Takes remaining width from chat panel */
   min-height: 0; 
   display: flex; 
   flex-direction: column;
-  background-color: var(--color-nord1); /* Editor background color on the wrapper */
-  padding: 15px; /* Padding on the wrapper */
-  overflow-y: auto; /* Allow wrapper to scroll if content overflows badly, though .milkdown should handle it */
+  background-color: var(--color-nord1); 
+  /* padding: 15px; */ /* Padding is now on .milkdown */
+  overflow: hidden; /* Let .milkdown handle its own scroll */
 }
 
 /* This class is applied by Milkdown to its root editor div */
 .milkdown {
-  background: transparent !important; /* Make actual milkdown div transparent */
-  color: var(--color-nord4) !important; /* Text color still applied here */
+  background: var(--color-nord1) !important; 
+  color: var(--color-nord4) !important;
+  padding: 15px;
   margin: 0; 
   flex-grow: 1; 
-  /* overflow-y: auto; */ /* Scroll handled by wrapper or .ProseMirror */
+  overflow-y: auto; 
   min-height: 0; 
   height: 100%; 
-  display: flex; /* Ensure it's a flex container for .ProseMirror if needed */
-  flex-direction: column;
 }
 
 /* Target the ProseMirror editable area specifically */
@@ -133,6 +151,27 @@ body[data-theme="light"] {
   min-height: calc(1.4em + 20px); 
   max-height: 20vh; 
   overflow-y: auto; 
+}
+
+.chat-toggle-button {
+  position: absolute;
+  left: 0; /* Start at left edge */
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--color-nord3);
+  color: var(--color-nord6);
+  border: none;
+  padding: 10px 1px; /* Further reduced horizontal padding */
+  cursor: pointer;
+  z-index: 10; /* Ensure it's above other elements */
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  font-size: 0.8em; /* Optionally make the arrow character smaller too */
+}
+
+.chat-toggle-button.open {
+  left: 33%; /* Adjust if chat panel width changes, or use calc() */
+  /* Or, if chat panel actually hides (width:0), this button would move with it if positioned relative to panel */
 }
 
 /* The imported @milkdown/theme-nord/style.css will use its own variables or Tailwind. 
