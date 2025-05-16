@@ -129,28 +129,157 @@ body[data-theme="light"] {
   outline: none; /* Remove default focus outline if not desired from theme */
 }
 
-/* Placeholder for the new prompt input area */
+/* Added styles for chat messages */
+.chat-panel .message {
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.chat-panel .message.user {
+  background-color: var(--color-nord5); /* Darker for user messages */
+  color: var(--color-nord0);
+  text-align: right;
+}
+
+.chat-panel .message.ai {
+  background-color: var(--color-nord3); /* Lighter for AI messages */
+  color: var(--color-nord0); /* Ensuring contrast if nord3 is dark enough */
+}
+
+.chat-panel .message p {
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.chat-panel .message strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.9em;
+}
+
+/* Combined and refined styles for prompt input area to match AI Video Editor app */
 .prompt-input-area {
-  background-color: var(--color-nord1);
-  padding: 10px;
-  border-top: 1px solid var(--color-nord2);
-  flex-shrink: 0; 
+  background-color: var(--color-nord2); /* Darker bar containing the input field, matching screenshot */
+  padding: 8px; /* Padding for the bar itself */
+  border-top: 1px solid var(--color-nord3);
+  flex-shrink: 0;
+  display: flex; /* Use flex to align internal wrapper and send button */
+  align-items: flex-end; /* Align items to bottom */
+}
+
+/* This wrapper now directly contains the textarea and its internal absolute elements */
+.prompt-input-internal-wrapper {
+  flex-grow: 1; /* Takes up available space next to send button */
+  position: relative; /* Already set inline, but good for clarity */
+  margin-right: 8px; /* Space before the send button */
 }
 
 .prompt-input-area textarea {
   width: 100%;
-  padding: 10px;
+  padding: 10px; /* Default padding */
+  padding-bottom: 35px; /* Increased padding to ensure space for internal controls */
   box-sizing: border-box;
   border: 1px solid var(--color-nord3);
   border-radius: 4px;
-  background-color: var(--color-nord0); 
-  color: var(--color-nord4);
+  /* --- KEY CHANGE: White background for textarea to match target UI --- */
+  background-color: #FFFFFF; /* Explicitly white */
+  color: #000000; /* Explicitly pure black text */
   resize: none; 
   font-size: 1em;
   line-height: 1.4;
-  min-height: calc(1.4em + 20px); 
-  max-height: 20vh; 
+  max-height: 150px; 
   overflow-y: auto; 
+  display: block; 
+}
+
+/* Styling for the internal model selector button */
+.model-selector-button-internal {
+  padding: 2px 10px; /* Matching AI app more closely */
+  border-radius: 15px; /* Oval shape like in AI video editor */
+  background-color: var(--color-nord2); /* Darker background for the button itself */
+  color: var(--color-nord5); /* Light text on the button */
+  cursor: pointer;
+  font-size: 0.5em; /* --- CORRECTED FONT SIZE --- */
+  border: 1px solid var(--color-nord3);
+  /* position, bottom, left, zIndex are set inline in JSX */
+  white-space: nowrap;
+}
+
+.model-selector-button-internal:hover {
+  background-color: var(--color-nord3);
+}
+
+/* Styling for the internal settings cog button */
+.settings-cog-button-internal {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-nord2); /* Fallback color, but SVG fill is primary */
+  /* position, bottom, left, zIndex are set inline in JSX */
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-cog-button-internal:hover {
+  fill: var(--color-nord2); /* Darken background on hover */
+}
+
+.settings-cog-button-internal:hover svg {
+  fill: var(--color-nord3); /* Lighter cog on hover */
+}
+
+.settings-cog-button-internal svg {
+  width: 16px; /* Match SVG size in JSX */
+  height: 16px;
+  fill: var(--color-nord2); /* Initial color of the cog - light on nord2 background */
+}
+
+/* Dropdown for the internal model selector */
+.model-picker-dropdown-internal {
+  /* position, bottom, left, zIndex are set inline in JSX */
+  background: var(--color-nord1); /* Background for the dropdown */
+  border: 1px solid var(--color-nord3);
+  border-radius: 4px;
+  min-width: 180px; 
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0px -2px 5px rgba(0,0,0,0.1); /* Shadow for dropdown appearing above */
+}
+
+/* .model-picker-item styles can remain largely the same but ensure colors fit */
+.model-picker-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-nord4); /* Text color for items */
+}
+
+.model-picker-item:hover {
+  background-color: var(--color-nord2);
+}
+
+.model-picker-item.selected {
+  background-color: var(--color-nord10); /* Use a Frost color for selection */
+  color: var(--color-nord0); /* Light text on selection */
+}
+
+/* Send button styling */
+.send-button {
+  padding: 6px 10px; /* Match other buttons */
+  border: 1px solid var(--color-nord3);
+  border-radius: 4px;
+  background-color: var(--color-nord2);
+  color: var(--color-nord4);
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-left: 8px;
+  flex-shrink: 0; /* Prevent send button from shrinking */
+  height: calc(1.4em + 20px); /* Match initial height of textarea (1 line + padding) */
 }
 
 .chat-toggle-button {
