@@ -33,16 +33,19 @@ An integrated desktop application that combines AI video generation capabilities
 *   **Phase 2 (Script Editing & Revision Workflow):**
     *   This phase is entered after a script is generated, skipped to, or uploaded.
     *   Features a primary Markdown editor (e.g., Milkdown) taking up the majority of the screen.
-    *   A smaller, persistent prompt input area at the bottom for AI-assisted edits, revisions, or additions to the existing script. The prompt input area should auto-grow from a minimal height but have a user-configurable 'max height'. If content exceeds this max height, the area should scroll internally. The input cursor/line should remain fixed at the bottom of the prompt area, with previous lines scrolling upwards.
+    *   A smaller, persistent prompt input area at the bottom for AI-assisted edits, revisions, or additions to the existing script. The prompt input area should auto-grow from a minimal height but have a user-configurable 'max height'. If content exceeds this max height, the area should scroll internally. The input cursor/line should remain fixed at the bottom of the prompt area, with previous lines scrolling upwards. Prompt submission will be via `Ctrl+Enter` or a dedicated 'Send' button; `Enter` alone will create a newline.
     *   This phase will include a visible toolbar for common formatting operations (bold, italic, lists, headings, etc.) to support users unfamiliar with Markdown.
     *   Implement robust undo/redo functionality.
+    *   Implement a slide-out chat panel from the left (approx 1/3 screen width, above prompt bar) for AI responses and dialogue.
+    *   Chat panel toggled by a button on the left edge (mid-height).
 
 ### 3.2 AI Interaction Design Principles (Scripting View & Beyond)
 *   Explore AI interaction models:
     *   Chat-first response then optional edits.
     *   Direct edits by AI.
     *   User toggle for AI interaction mode (chat vs. edit).
-*   Default behavior for script revisions: AI responds in a chat-like interface first, then (optionally or upon confirmation) makes edits to the document.
+*   Default behavior for script revisions: AI responds in a chat-like interface first, then (optionally or upon confirmation) makes edits to the document. AI needs read/write access to editor content.
+*   Prompt submission behavior: User prompts via bottom input. `Enter` key creates a newline. `Ctrl+Enter` (or `Cmd+Enter`) submits the prompt. A visible 'Send' button also submits the prompt.
 
 ## 4. Why Now?
 

@@ -67,10 +67,14 @@
 *   `[ ]` **Design and Implement Scripting View - Phase 1 (Claude-like prominent prompt, no editor, skip/upload options).**
 *   `[-]` **Develop Scripting View - Phase 2 (Milkdown editor with bottom prompt area - current Milkdown experiment).**
     *   `[-]` Layout: Milkdown editor fills majority of screen, prompt area minimal at bottom.
+    *   `[ ]` UI: Implement slide-out chat panel from left.
+    *   `[ ]` UI: Implement chat panel toggle button.
     *   `[ ]` Implement undo/redo functionality (likely via `@milkdown/plugin-history`).
     *   `[ ]` Implement a visible toolbar for common Markdown formatting operations.
-    *   `[ ]` Implement user-configurable max height for the prompt input area.
-    *   `[ ]` Define AI interaction model (chat vs. direct edit, user toggle, etc.).
+    *   `[ ]` Implement user-configurable max height for the prompt input area (auto-grows to this max, then scrolls; input line fixed at bottom, previous lines scroll up).
+    *   `[ ]` Define AI interaction model (chat-first response then optional edits vs. direct edits; consider user toggle. AI needs read/write access to editor content).
+    *   `[ ]` UI/UX: Implement prompt submission logic: Enter for newline, Ctrl+Enter (or Cmd+Enter) to send.
+    *   `[ ]` UI: Add a visible 'Send' button for the prompt input area.
 *   `[ ]` (Future) Implement canvas-style script editor with AI-assisted inline editing (requires new system message for editing tasks).
 *   `[ ]` (Future) Allow user to customize system messages or select personas.
 *   `[x]` **Tech Debt/Optimization:** Anthropic API key validation in `App.jsx` and `python_server/main.py` is slow. Investigate using a faster/lighter API call for validation. (Marking as [x] since we identified it, though fix is pending)
