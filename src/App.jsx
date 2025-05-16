@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
+import remarkGfm from 'remark-gfm'; // Import remarkGfm for GitHub Flavored Markdown
 // import reactLogo from './assets/react.svg' // Example asset import
 // import viteLogo from '/vite.svg' // Example asset import
 import './App.css';
-import DevTooltip from './DevTooltip'; // Import the new component
+// import DevTooltip from './DevTooltip'; // REMOVED DevTooltip import
 
 function App() {
   const [currentView, setCurrentView] = useState('editor'); // 'editor', 'concept', or 'scripting'
@@ -24,16 +26,53 @@ function App() {
   const [isKeyValidating, setIsKeyValidating] = useState(false); // For disabling button
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
 
+  // New state for Google API Key
+  const [googleApiKey, setGoogleApiKey] = useState('');
+  const [showGoogleKey, setShowGoogleKey] = useState(false);
+  const [googleApiKeyValidationStatus, setGoogleApiKeyValidationStatus] = useState('');
+  const [isGoogleKeyValidating, setIsGoogleKeyValidating] = useState(false);
+
+  // New state for selected script model
+  const [selectedScriptModel, setSelectedScriptModel] = useState('claude-3-5-sonnet-20240620');
+
+  // State for custom system prompts and modal visibility
+  const [showPromptSettingsModal, setShowPromptSettingsModal] = useState(false);
+  const [customSystemPrompt, setCustomSystemPrompt] = useState(''); // Single system prompt
+  // Temporary state for editing in modal, to be applied on save
+  const [editingSystemPrompt, setEditingSystemPrompt] = useState(''); // Single editing state
+
+  // State for custom model picker
+  const [showModelPicker, setShowModelPicker] = useState(false);
+
+  const SCRIPT_MODELS = [
+    // Updated list of models as per user request
+    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet' }, 
+    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' }, // Renamed from v2
+    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
+    
+    // Google Models (names cleaned)
+    { id: 'gemini-2.5-pro-preview-05-06', name: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini 2.5 Flash' },
+  ];
+
   // Listen for event from main process to open API key settings
   useEffect(() => {
     if (window.electronAPI && window.electronAPI.on) {
       window.electronAPI.on('open-api-key-settings', () => {
         console.log('Renderer: Received open-api-key-settings');
         setApiKeyValidationStatus(''); // Reset validation status when opening
+        setGoogleApiKeyValidationStatus(''); // Reset Google validation status too
         setIsKeyValidating(false);
+        setIsGoogleKeyValidating(false);
+        // Fetch Anthropic Key
         window.electronAPI.getApiKey('ANTHROPIC_API_KEY').then(key => {
           if (key) setAnthropicApiKey(key);
           else setAnthropicApiKey(''); // Clear if no key was stored
+        });
+        // Fetch Google Key
+        window.electronAPI.getApiKey('GOOGLE_API_KEY').then(key => {
+          if (key) setGoogleApiKey(key);
+          else setGoogleApiKey(''); // Clear if no key was stored
         });
         setShowApiKeySettings(true);
       });
@@ -42,32 +81,86 @@ function App() {
     // return () => { /* ipcRenderer.removeAllListeners(...) if needed, but electronAPI.on is safer */ };
   }, []);
 
-  const handleSaveAnthropicKey = async () => {
-    if (window.electronAPI && anthropicApiKey.trim()) {
-      setIsKeyValidating(true);
-      setApiKeyValidationStatus('Validating key...');
-      try {
-        const validationResult = await window.electronAPI.validateApiKey({ 
-          serviceName: 'ANTHROPIC_API_KEY', 
-          apiKey: anthropicApiKey 
-        });
+  // Unified handler to validate and save all API keys
+  const handleSaveAllApiKeys = async () => {
+    let anthropicKeyToSave = anthropicApiKey.trim();
+    let googleKeyToSave = googleApiKey.trim();
+    let canProceedAnthropic = true;
+    let canProceedGoogle = true;
 
-        if (validationResult.success) {
-          setApiKeyValidationStatus('Key is valid! Saving...');
-          window.electronAPI.saveApiKey({ serviceName: 'ANTHROPIC_API_KEY', apiKey: anthropicApiKey });
-          alert('Anthropic API Key saved successfully!\nRestart Python server if it was relying on environment variables before.');
-          setShowApiKeySettings(false);
+    setIsKeyValidating(true); // Generic validating state for Anthropic section
+    setIsGoogleKeyValidating(true); // Generic validating state for Google section
+    setApiKeyValidationStatus('');
+    setGoogleApiKeyValidationStatus('');
+
+    // Validate Anthropic Key if it's not empty
+    if (anthropicKeyToSave) {
+      setApiKeyValidationStatus('Validating Anthropic Key...');
+      try {
+        const anthropicValidation = await window.electronAPI.validateApiKey({ 
+          serviceName: 'ANTHROPIC_API_KEY', 
+          apiKey: anthropicKeyToSave 
+        });
+        if (anthropicValidation.success) {
+          setApiKeyValidationStatus(anthropicValidation.message || 'Anthropic Key is valid.');
         } else {
-          setApiKeyValidationStatus(`Invalid Key: ${validationResult.error || 'Unknown validation error.'}`);
+          setApiKeyValidationStatus(anthropicValidation.error || 'Invalid Anthropic Key.');
+          canProceedAnthropic = false;
         }
       } catch (error) {
-        console.error('Error during API key validation or save:', error);
-        setApiKeyValidationStatus(`Error: ${error.message || 'Could not validate or save key.'}`);
+        setApiKeyValidationStatus(`Error validating Anthropic Key: ${error.message}`);
+        canProceedAnthropic = false;
       }
-      setIsKeyValidating(false);
-    } else if (!anthropicApiKey.trim()){
-        setApiKeyValidationStatus('API Key cannot be empty.');
+    } else {
+      setApiKeyValidationStatus('Anthropic Key field is empty. No validation performed, will clear if saved.');
     }
+
+    // Validate Google Key if it's not empty
+    if (googleKeyToSave) {
+      setGoogleApiKeyValidationStatus('Validating Google Key...');
+      try {
+        const googleValidation = await window.electronAPI.validateGoogleApiKey({ apiKey: googleKeyToSave });
+        if (googleValidation.success) {
+          setGoogleApiKeyValidationStatus(googleValidation.message || 'Google Key is valid.');
+        } else {
+          setGoogleApiKeyValidationStatus(googleValidation.error || 'Invalid Google Key.');
+          canProceedGoogle = false;
+        }
+      } catch (error) {
+        setGoogleApiKeyValidationStatus(`Error validating Google Key: ${error.message}`);
+        canProceedGoogle = false;
+      }
+    } else {
+      setGoogleApiKeyValidationStatus('Google Key field is empty. No validation performed, will clear if saved.');
+    }
+
+    let savedAnthropic = false;
+    let savedGoogle = false;
+
+    if (canProceedAnthropic && window.electronAPI) {
+      window.electronAPI.saveApiKey({ serviceName: 'ANTHROPIC_API_KEY', apiKey: anthropicKeyToSave });
+      if(anthropicKeyToSave) setApiKeyValidationStatus('Anthropic Key Saved!');
+      else setApiKeyValidationStatus('Anthropic Key cleared.'); 
+      savedAnthropic = true;
+    }
+
+    if (canProceedGoogle && window.electronAPI) {
+      window.electronAPI.saveApiKey({ serviceName: 'GOOGLE_API_KEY', apiKey: googleKeyToSave });
+      if(googleKeyToSave) setGoogleApiKeyValidationStatus('Google Key Saved!');
+      else setGoogleApiKeyValidationStatus('Google Key cleared.');
+      savedGoogle = true;
+    }
+    
+    // Ensure these are always called to re-enable UI elements
+    setIsKeyValidating(false);
+    setIsGoogleKeyValidating(false);
+
+    // Optionally close modal if both successful or no errors for attempted saves
+    // For now, leave it open so user sees status, they can click Cancel/Close.
+    // if ((anthropicKeyToSave === '' || (canProceedAnthropic && savedAnthropic)) && 
+    //     (googleKeyToSave === '' || (canProceedGoogle && savedGoogle))) {
+    //   alert('API Keys processed.'); 
+    // }
   };
 
   // Function to test IPC
@@ -118,17 +211,32 @@ function App() {
     if (window.electronAPI) {
       setIsGeneratingScript(true);
       setGeneratedScript('Generating script...');
+      
+      // Use the single custom system prompt if it has content, otherwise null
+      const systemPromptToUse = customSystemPrompt.trim() ? customSystemPrompt.trim() : null;
+
       try {
-        const modelToUse = 'claude-3-5-sonnet-20240620';
+        const apiKey = selectedScriptModel.startsWith('claude-') ? anthropicApiKey : (selectedScriptModel.startsWith('gemini-') ? googleApiKey : null);
         const result = await window.electronAPI.generateLlmScript({ 
           prompt: scriptPrompt, 
-          modelIdentifier: modelToUse 
+          modelIdentifier: selectedScriptModel,
+          apiKey: apiKey, // Pass the relevant API key
+          systemPrompt: systemPromptToUse // Pass the determined system prompt
         });
         console.log('Renderer: LLM script response:', result);
         if (result.success && result.data && result.data.script) {
           setGeneratedScript(result.data.script);
         } else {
-          setGeneratedScript(`Error generating script: ${result.error || 'Unknown error'}\nDetails: ${JSON.stringify(result.data, null, 2)}`);
+          let errorMessage = `Error generating script: ${result.error || 'Unknown error'}`;
+          if (result.data && result.data.error_type === 'ResourceExhausted' && selectedScriptModel.startsWith('gemini-')) {
+            errorMessage += `\n\nThis often means you\'ve exceeded the free tier quota for the selected Gemini model, or the model requires a billing-enabled account. Please check your Google Cloud project quotas and billing status. More info: https://ai.google.dev/gemini-api/docs/rate-limits`;
+          }
+          if (result.data && result.data.raw_error) {
+             errorMessage += `\nDetails: ${JSON.stringify(result.data.raw_error, null, 2)}`;
+          } else if (result.data) {
+            errorMessage += `\nDetails: ${JSON.stringify(result.data, null, 2)}`;
+          }
+          setGeneratedScript(errorMessage);
         }
       } catch (error) {
         console.error('Error invoking generateLlmScript:', error);
@@ -141,23 +249,6 @@ function App() {
     }
   };
 
-  const notes = {
-    imageAssets: "Left sidebar (Concept View) for generating and managing image assets for storyboarding. Supports dragging to storyboard. Future: Filter/search assets.",
-    storyboard: "Central area (Concept View) for arranging shot cards. Each card will have an image, script ref, action, dialogue, SFX. Future: Reorder scenes/shots, AI-fill from script.",
-    moodboard: "Right sidebar (Concept View) for visual inspiration and references. Supports image generation. Future: Organize into collections, add notes to images.",
-    // Editor View Notes
-    editorMediaBin: "Media Bin (Editor View): Organizes all project assets. Video, Audio, and Image sections with respective generation/import tools. Future: Folder structure, tagging, metadata display.",
-    editorVideoGen: "Video Generation (Editor Media Bin): Tools for AI video clip generation. Future: Multiple models, advanced controls, direct import to timeline.",
-    editorAudioGen: "Audio/Music Generation (Editor Media Bin): Tools for AI audio effects and music tracks. Future: Speech synthesis, sound effect libraries, music style controls.",
-    editorImageAssets: "Image Assets (Editor Media Bin): For importing or generating overlay images like logos, banners, titles with transparency. Future: Basic image editing (crop, resize).", 
-    editorPreviewWindow: "Preview Window (Editor View): Displays the current state of the timeline. Future: Playback controls, resolution/quality settings, full-screen mode.",
-    editorTimeline: "Timeline (Editor View): Main editing interface. Arrange video, audio, image tracks. Future: Multi-track support, trimming, splitting, transitions, effects, keyframing.",
-    // Scripting View Notes
-    scriptingEditor: "Main text editor (Scripting View) for writing and refining scripts. Future: AI co-writing (suggestions, summarization, plot points), rich text formatting, revision history, scene detection.",
-    // Toolbar Note
-    toolbar: "Main application toolbar. Will contain File (New, Open, Save, Import, Export), Edit (Undo, Redo, Preferences), View (Toggle Panels, Zoom), Window, and Help menus. Functionality will be added incrementally."
-  };
-
   const renderEditorView = () => (
     <>
       <div className="main-content">
@@ -165,17 +256,12 @@ function App() {
           <div className="media-bin">
             <div className="section-header-wrapper">
               <h4>Media Bin</h4>
-              <DevTooltip note={notes.editorMediaBin}>
-                <span className="info-icon-container">
-                  <span className="info-icon">&#x24D8;</span>
-                  <span className="dev-notes-label">Dev Notes</span>
-                </span>
-              </DevTooltip>
+              {/* <DevTooltip note={notes.editorMediaBin}> ... </DevTooltip> */}{/* REMOVED DevTooltip */}
             </div>
             <div className="media-section video-clips-section">
               <button className="generation-toggle-button" onClick={() => setIsVideoGenVisible(!isVideoGenVisible)}>
                 {isVideoGenVisible ? '▼' : '►'} Video Generation 
-                <DevTooltip note={notes.editorVideoGen}><span className="info-icon mini-info-icon">&#x24D8;</span></DevTooltip>
+                {/* <DevTooltip note={notes.editorVideoGen}><span className="info-icon mini-info-icon">&#x24D8;</span></DevTooltip> */}{/* REMOVED DevTooltip */}
               </button>
               {isVideoGenVisible && (
                 <div className="generation-panel embedded-generation-panel">
@@ -190,7 +276,7 @@ function App() {
             <div className="media-section audio-clips-section">
               <button className="generation-toggle-button" onClick={() => setIsAudioGenVisible(!isAudioGenVisible)}>
                  {isAudioGenVisible ? '▼' : '►'} Audio/Music Generation 
-                 <DevTooltip note={notes.editorAudioGen}><span className="info-icon mini-info-icon">&#x24D8;</span></DevTooltip>
+                 {/* <DevTooltip note={notes.editorAudioGen}><span className="info-icon mini-info-icon">&#x24D8;</span></DevTooltip> */}{/* REMOVED DevTooltip */}
               </button>
                {isAudioGenVisible && (
                 <div className="generation-panel embedded-generation-panel">
@@ -205,7 +291,7 @@ function App() {
             <div className="media-section images-section">
               <button className="generation-toggle-button" onClick={() => setIsImagesVisible(!isImagesVisible)}>
                 {isImagesVisible ? '▼' : '►'} Image Assets 
-                <DevTooltip note={notes.editorImageAssets}><span className="info-icon mini-info-icon">&#x24D8;</span></DevTooltip>
+                {/* <DevTooltip note={notes.editorImageAssets}><span className="info-icon mini-info-icon">&#x24D8;</span></DevTooltip> */}{/* REMOVED DevTooltip */}
               </button>
               {isImagesVisible && (
                 <div className="media-content-placeholder">
@@ -224,7 +310,7 @@ function App() {
           <div className="preview-window">
             <div className="section-header-wrapper">
               {/* Text removed, placeholder provides context */}
-              <DevTooltip note={notes.editorPreviewWindow}><span className="info-icon-container"><span className="info-icon">&#x24D8;</span><span className="dev-notes-label">Dev Notes</span></span></DevTooltip> 
+              {/* <DevTooltip note={notes.editorPreviewWindow}><span className="info-icon-container"><span className="info-icon">&#x24D8;</span><span className="dev-notes-label">Dev Notes</span></span></DevTooltip> */}{/* REMOVED DevTooltip */} 
             </div>
             Preview Window Placeholder
           </div>
@@ -233,12 +319,7 @@ function App() {
       <div className="timeline">
         <div className="section-header-wrapper">
           <h5>Timeline</h5>
-          <DevTooltip note={notes.editorTimeline}>
-            <span className="info-icon-container">
-              <span className="info-icon">&#x24D8;</span>
-              <span className="dev-notes-label">Dev Notes</span>
-            </span>
-          </DevTooltip>
+          {/* <DevTooltip note={notes.editorTimeline}> ... </DevTooltip> */}{/* REMOVED DevTooltip */}
         </div>
         Timeline Placeholder
       </div>
@@ -253,12 +334,7 @@ function App() {
         )}
         <div className="concept-column-header-wrapper">
           <h3>Image Assets</h3>
-          <DevTooltip note={notes.imageAssets}>
-            <span className="info-icon-container">
-              <span className="info-icon">&#x24D8;</span>
-              <span className="dev-notes-label">Dev Notes</span>
-            </span>
-          </DevTooltip>
+          {/* <DevTooltip note={notes.imageAssets}> ... </DevTooltip> */}{/* REMOVED DevTooltip */}
         </div>
         <div className="concept-content">
           <button className="generation-toggle-button concept-gen-toggle" onClick={() => setIsConceptImageGenVisible(!isConceptImageGenVisible)}>
@@ -282,12 +358,7 @@ function App() {
       <div className="concept-column storyboard-column">
         <div className="concept-column-header-wrapper">
           <h3>Storyboard/Shot List</h3>
-          <DevTooltip note={notes.storyboard}>
-            <span className="info-icon-container">
-              <span className="info-icon">&#x24D8;</span>
-              <span className="dev-notes-label">Dev Notes</span>
-            </span>
-          </DevTooltip>
+          {/* <DevTooltip note={notes.storyboard}> ... </DevTooltip> */}{/* REMOVED DevTooltip */}
         </div>
         <div className="concept-content">
           Storyboard Area Placeholder - List of Scenes/Shots
@@ -316,12 +387,7 @@ function App() {
         )}
         <div className="concept-column-header-wrapper">
           <h3>Moodboard/References</h3>
-          <DevTooltip note={notes.moodboard}>
-            <span className="info-icon-container">
-              <span className="info-icon">&#x24D8;</span>
-              <span className="dev-notes-label">Dev Notes</span>
-            </span>
-          </DevTooltip>
+          {/* <DevTooltip note={notes.moodboard}> ... </DevTooltip> */}{/* REMOVED DevTooltip */}
         </div>
         <div className="concept-content">
            <button className="generation-toggle-button concept-gen-toggle" onClick={() => setIsMoodboardImageGenVisible(!isMoodboardImageGenVisible)}>
@@ -344,43 +410,211 @@ function App() {
     </div>
   );
 
-  const renderScriptingView = () => (
-    <div className="scripting-view-container">
-      <div className="section-header-wrapper">
-        <h2>Scripting & Notes View</h2>
-        <DevTooltip note={notes.scriptingEditor}><span className="info-icon-container"><span className="info-icon">&#x24D8;</span><span className="dev-notes-label">Dev Notes</span></span></DevTooltip>
-      </div>
-      <p>Enter a prompt below to generate a script using an external LLM.</p>
-      
-      <div className="script-generation-area" style={{ margin: '20px 0', padding: '10px', border: '1px solid #555' }}>
-        <textarea 
-          value={scriptPrompt} 
-          onChange={(e) => setScriptPrompt(e.target.value)} 
-          placeholder="Enter your script idea or prompt here... e.g., A short scene about two astronauts discovering a mysterious alien artifact on Mars."
-          rows={5}
-          style={{ width: '98%', marginBottom: '10px', padding: '5px' }}
-          disabled={isGeneratingScript}
-        />
-        <button onClick={handleGenerateScript} disabled={isGeneratingScript}>
-          {isGeneratingScript ? 'Generating...' : 'Generate Script (via LLM)'}
-        </button>
-      </div>
+  const renderScriptingView = () => {
+    const selectedModelName = SCRIPT_MODELS.find(m => m.id === selectedScriptModel)?.name || 'Select Model';
 
-      {generatedScript && (
-        <div className="generated-script-display" style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px' }}>
-          <h4>Generated Script:</h4>
-          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', backgroundColor: '#222', padding: '10px', borderRadius: '4px' }}>
-            {generatedScript}
-          </pre>
+    return (
+      <div className="scripting-view-container">
+        <div className="script-generation-area" style={{ margin: '0 0 20px 0', padding: '10px', borderBottom: '1px solid #555' }}>
+          
+          {/* Prompt Textarea, Gear Icon, and Model Name Display */}
+          <div style={{ /*position: 'relative',*/ display: 'flex', alignItems: 'flex-start', marginBottom: '10px' }}> {/* Removed outer relative positioning as gear is now inside the next div */}
+            {/* Container for Textarea, Gear Icon, and Model Name */}
+            <div style={{ flexGrow: 1, position: 'relative' }}> 
+              {/* Gear Icon Button - Updated to SVG */}
+              <button 
+                style={{ 
+                  position: 'absolute', 
+                  bottom: '8px', 
+                  left: '110px', 
+                  cursor: 'pointer',
+                  zIndex: 2, 
+                  background: 'transparent', // Transparent background for icon button
+                  border: 'none', // No border for icon button
+                  padding: '2px', // Minimal padding for the icon
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  // Ensure consistent height with the other button if needed, e.g., by setting height/width
+                  height: '20px', // Match height of other button
+                  width: '18px',  // Make it square for an icon
+                }}
+                title="Edit text generation settings..."
+                onClick={handleOpenPromptSettings}
+                disabled={isGeneratingScript}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#2a2a2a" stroke="#2a2a2a" strokeWidth="0.5" className="bi bi-gear-fill" viewBox="0 0 16 16">
+                  <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+                </svg>
+              </button>
+
+              <textarea 
+                value={scriptPrompt} 
+                onChange={(e) => setScriptPrompt(e.target.value)} 
+                placeholder="Enter your prompt..."
+                rows={6} 
+                style={{ 
+                  width: '100%', 
+                  padding: '10px', 
+                  paddingLeft: '5px', // Reduced padding to bring text closer to left edge, still clears button
+                  paddingRight: '5px', // Reduced padding to bring text closer to left edge, still clears button
+                  paddingTop: '10px',  // Increased padding top slightly for more space below buttons
+                  boxSizing: 'border-box', 
+                  resize: 'vertical', 
+                  border: '1px solid #444',
+                }} 
+                disabled={isGeneratingScript}
+              />
+              {/* Model Name Display / Clickable Area - Refined Styling */}
+              <div 
+                onClick={() => !isGeneratingScript && setShowModelPicker(!showModelPicker)}
+                title="Click to change LLM model"
+                style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  left: '10px',
+                  padding: '2px 10px', // Reduced padding for smaller size
+                  background: '#2a2a2a',
+                  color: '#e0e0e0',
+                  borderRadius: '15px', // Increased border-radius for oval shape
+                  fontSize: '0.5em',
+                  cursor: isGeneratingScript ? 'default' : 'pointer',
+                  opacity: isGeneratingScript ? 0.7 : 1,
+                  border: '1px solid #404040',
+                  zIndex: 2,
+                  // minWidth removed to allow width to be content-driven, will tie dropdown width to this.
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap', // Prevent wrapping in the trigger
+                  display: 'inline-block' // Ensure it only takes necessary width
+                }}
+              >
+                {selectedModelName} {showModelPicker ? '▲' : '▼'}
+              </div>
+
+              {/* Custom Model Picker Dropdown - Refined Styling */}
+              {showModelPicker && (
+                <div style={{
+                  position: 'absolute',
+                  top: '108px',
+                  left: '4px',
+                  background: '#1e1e1e',
+                  border: '1px solid #333',
+                  borderRadius: '4px',
+                  zIndex: 100, 
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  boxShadow: '0px 5px 10px rgba(0,0,0,0.5)',
+                  minWidth: 'max-content',
+                }}>
+                  {SCRIPT_MODELS.map(model => (
+                    <div 
+                      key={model.id}
+                      onClick={() => {
+                        setSelectedScriptModel(model.id);
+                        setShowModelPicker(false);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        backgroundColor: model.id === selectedScriptModel ? '#007bff' : 'transparent',
+                        color: model.id === selectedScriptModel ? 'white' : '#d0d0d0',
+                        borderBottom: '1px solid #333',
+                        fontSize: '0.5em',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = model.id === selectedScriptModel ? '#0056b3' : '#3a3a3a'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = model.id === selectedScriptModel ? '#007bff' : 'transparent'}
+                      title={model.name}
+                    >
+                      {model.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <button 
+            onClick={handleGenerateScript} 
+            disabled={isGeneratingScript} 
+            style={{ 
+              padding: '12px 15px', 
+              width: '100%',
+              fontSize: '1.1em' 
+            }}
+          >
+            {isGeneratingScript ? 'Generating...' : 'Generate Script (via LLM)'}
+          </button>
         </div>
-      )}
 
-      {/* IPC Test Buttons - can be kept or removed */}
-      <div style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px', opacity: 0.5 }}>
-        <button onClick={handleGetAppVersion}>Get App Version (IPC Test)</button>
-        <p style={{fontSize: '0.8em'}}>App Version: {appVersion}</p>
-        <button onClick={handlePingPython}>Ping Python Backend (IPC Test)</button>
-        <p style={{fontSize: '0.8em'}}>Python Response: <pre style={{fontSize: '0.8em'}}>{pythonResponse}</pre></p>
+        {/* Generated Script Display Area */}
+        {generatedScript && (
+          <div className="generated-script-display" style={{ marginTop: '0', /* Removed top margin */ borderTop: 'none', /*Removed border if controls are above*/ paddingTop: '0', textAlign: 'left' }}>
+            <h4>Generated Script:</h4>
+            <div className="markdown-output-area" style={{ backgroundColor: '#222', padding: '10px', borderRadius: '4px', maxHeight: 'calc(100vh - 300px)', /* Adjust max height based on other elements */ overflowY: 'auto' }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{generatedScript}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {/* IPC Test Buttons - can be kept or removed */}
+        {/* <div style={{ marginTop: '20px', borderTop: '1px solid #555', paddingTop: '10px', opacity: 0.5 }}>
+          <button onClick={handleGetAppVersion}>Get App Version (IPC Test)</button>
+          <p style={{fontSize: '0.8em'}}>App Version: {appVersion}</p>
+          <button onClick={handlePingPython}>Ping Python Backend (IPC Test)</button>
+          <p style={{fontSize: '0.8em'}}>Python Response: <pre style={{fontSize: '0.8em'}}>{pythonResponse}</pre></p>
+        </div> */}
+      </div>
+    );
+  };
+
+  const handleOpenPromptSettings = () => {
+    // Load current custom prompts into editing state when modal opens
+    setEditingSystemPrompt(customSystemPrompt);
+    setShowPromptSettingsModal(true);
+  };
+
+  const handleSavePromptSettings = () => {
+    setCustomSystemPrompt(editingSystemPrompt);
+    setShowPromptSettingsModal(false);
+  };
+
+  const handleCancelPromptSettings = () => {
+    setShowPromptSettingsModal(false);
+  };
+
+  const renderPromptSettingsModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-content prompt-settings-modal" style={{width: '600px', maxHeight: '80vh'}}>
+        <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Prompt Settings</h3>
+        
+        <div style={{ marginBottom: '15px' }}>
+          <label htmlFor="customSystemPromptTextarea" style={{ display: 'block', marginBottom: '5px' }}>Custom System Prompt (for all LLM models):</label>
+          <textarea 
+            id="customSystemPromptTextarea"
+            value={editingSystemPrompt} // Use single editing state
+            onChange={(e) => setEditingSystemPrompt(e.target.value)} // Update single editing state
+            placeholder="Leave blank to use default system prompt for the selected model. Otherwise, enter your custom instructions here..."
+            rows={12} // Made it taller as it's the only one
+            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', resize: 'vertical' }}
+          />
+        </div>
+
+        {/* Removed Gemini-specific textarea */}
+
+        {/* Placeholder for future settings like tone, genre, top_p, top_k etc. */}
+        {/* <p style={{color: '#888', fontSize: '0.9em'}}>Future settings (tone, genre, top_p, top_k) will appear here.</p> */}
+
+        <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '30px', borderTop: '1px solid #555', paddingTop: '15px'}}>
+          <button onClick={handleCancelPromptSettings} style={{ padding: '8px 12px'}}>
+            Cancel
+          </button>
+          <button onClick={handleSavePromptSettings} style={{ padding: '8px 12px'}}>
+            Save Prompt Settings
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -388,44 +622,76 @@ function App() {
   const renderApiKeySettings = () => (
     <div className="modal-overlay">
       <div className="modal-content api-key-settings">
-        <h3>API Key Settings</h3>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-          <label htmlFor="anthropicKey" style={{ flexShrink: 0, marginRight: '10px' }}>Anthropic API Key:</label>
-          <input 
-            type={showAnthropicKey ? 'text' : 'password'} 
-            id="anthropicKey" 
-            value={anthropicApiKey}
-            onChange={(e) => setAnthropicApiKey(e.target.value)}
-            placeholder="sk-ant-..."
-            style={{ width: '100%', flexGrow: 1 }} /* Let input take available space */
-            disabled={isKeyValidating}
-          />
-          <button 
-            onClick={() => setShowAnthropicKey(!showAnthropicKey)} 
-            style={{ marginLeft: '10px', padding: '6px 8px', fontSize: '0.8em' }}
-            disabled={isKeyValidating}
-          >
-            {showAnthropicKey ? 'Hide' : 'Show'}
-          </button>
+        <h3 style={{ marginTop: 0, marginBottom: '20px' }}>API Key Settings</h3>
+
+        {/* Anthropic API Key Input */}
+        <div style={{ marginBottom: '25px' }}>
+          <label htmlFor="anthropicApiKeyInput" style={{ display: 'block', marginBottom: '5px' }}>Anthropic API Key:</label>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input 
+              type={showAnthropicKey ? 'text' : 'password'} 
+              id="anthropicApiKeyInput" 
+              value={anthropicApiKey}
+              onChange={(e) => setAnthropicApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+              style={{ width: '100%', flexGrow: 1, padding: '8px', marginRight: '10px' }} // Added padding and margin
+              disabled={isKeyValidating || isGoogleKeyValidating} // Disable if any validation is running
+            />
+            <button 
+              onClick={() => setShowAnthropicKey(!showAnthropicKey)} 
+              style={{ padding: '8px'}} // Standardized padding
+              disabled={isKeyValidating || isGoogleKeyValidating}
+            >
+              {showAnthropicKey ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          {apiKeyValidationStatus && (
+            <p style={{
+                marginTop: '10px',
+                color: apiKeyValidationStatus.includes('Invalid') || apiKeyValidationStatus.includes('Error') ? '#ff6b6b' : '#66bb6a',
+                fontSize: '0.9em'
+            }}>
+                {apiKeyValidationStatus}
+            </p>
+          )}
         </div>
-        {apiKeyValidationStatus && (
-          <p style={{ 
-            marginTop: '10px', 
-            color: apiKeyValidationStatus.startsWith('Invalid') || apiKeyValidationStatus.startsWith('Error') || apiKeyValidationStatus.startsWith('API Key cannot') || apiKeyValidationStatus.includes('credit balance') ? '#ff6b6b' : '#66bb6a', 
-            fontSize: '0.9em' 
-          }}>
-            {apiKeyValidationStatus}
-          </p>
-        )}
-        <div style={{marginTop: '20px'}}>
-          <button onClick={handleSaveAnthropicKey} disabled={isKeyValidating}>
-            {isKeyValidating ? 'Validating & Saving...' : 'Save Key'}
-          </button>
-          <button onClick={() => { setShowApiKeySettings(false); setApiKeyValidationStatus(''); }} style={{marginLeft: '10px'}} disabled={isKeyValidating}>
+
+        {/* Google API Key Input */}
+        <div style={{ marginBottom: '25px' }}>
+            <label htmlFor="googleApiKeyInput" style={{ display: 'block', marginBottom: '5px' }}>Google API Key (for Gemini Models):</label>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input 
+                type={showGoogleKey ? 'text' : 'password'}
+                id="googleApiKeyInput"
+                value={googleApiKey}
+                onChange={(e) => setGoogleApiKey(e.target.value)}
+                placeholder="Enter your Google API Key"
+                style={{ flexGrow: 1, padding: '8px', marginRight: '10px' }}
+                disabled={isGoogleKeyValidating}
+            />
+            <button onClick={() => setShowGoogleKey(!showGoogleKey)} style={{padding: '8px'}} disabled={isGoogleKeyValidating}>
+                {showGoogleKey ? 'Hide' : 'Show'}
+            </button>
+            </div>
+            {googleApiKeyValidationStatus && (
+            <p style={{
+                marginTop: '10px',
+                color: googleApiKeyValidationStatus.includes('Invalid') || googleApiKeyValidationStatus.includes('Error') || googleApiKeyValidationStatus.includes('blocked') || googleApiKeyValidationStatus.includes('IPC Error') || googleApiKeyValidationStatus.includes('unexpected error') ? '#ff6b6b' : '#66bb6a',
+                fontSize: '0.9em'
+            }}>
+                {googleApiKeyValidationStatus}
+            </p>
+            )}
+        </div>
+
+        <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '30px', borderTop: '1px solid #555', paddingTop: '15px'}}>
+          <button onClick={() => { setShowApiKeySettings(false); setApiKeyValidationStatus(''); setGoogleApiKeyValidationStatus(''); }} disabled={isKeyValidating || isGoogleKeyValidating} style={{ padding: '8px 12px'}}>
             Cancel
           </button>
+          <button onClick={handleSaveAllApiKeys} disabled={isKeyValidating || isGoogleKeyValidating} style={{ padding: '8px 12px'}}>
+            Save Keys
+          </button>
         </div>
-        <p style={{fontSize: '0.8em', marginTop: '15px'}}>API keys are stored locally. The application will use these keys for API calls. Ensure you have the necessary permissions for the models you intend to use.</p>
       </div>
     </div>
   );
@@ -435,21 +701,52 @@ function App() {
       <div className="toolbar">
         <span style={{marginRight: 'auto'}}>Toolbar Placeholder (File, Edit, etc.)</span>
         
-        <DevTooltip note={notes.toolbar}>
-          <span className="info-icon-container">
-             <span className="info-icon">&#x24D8;</span>
-             <span className="dev-notes-label">Dev Notes</span>
-          </span>
-        </DevTooltip>
+        {/* <DevTooltip note={notes.toolbar}> ... </DevTooltip> */}{/* REMOVED DevTooltip */}
         
         <div className="view-switcher">
-          <button onClick={() => setCurrentView('scripting')} disabled={currentView === 'scripting'}>
+          <button onClick={() => setCurrentView('scripting')} 
+            style={{
+              // Apply styles based on active state
+              color: currentView === 'scripting' ? '#ff9800' : '#333', // Orange text for active, dark gray for inactive
+              background: currentView === 'scripting' ? '#ffffff' : '#f0f0f0', // Almost white for active, pale gray for inactive
+              fontWeight: 'normal', // Consistent font weight
+              border: '1px solid #ccc', // Consistent border
+              borderRadius: '4px', // Consistent border radius
+              padding: '5px 10px', // Consistent padding
+              boxShadow: 'none', // Explicitly remove bevel
+              cursor: 'pointer', // Ensure cursor indicates interactivity
+            }}
+          >
             Scripting
           </button>
-          <button onClick={() => setCurrentView('concept')} disabled={currentView === 'concept'}>
+          <button onClick={() => setCurrentView('concept')} 
+             style={{
+               // Apply styles based on active state
+              color: currentView === 'concept' ? '#ff9800' : '#333', // Orange text for active, dark gray for inactive
+              background: currentView === 'concept' ? '#ffffff' : '#f0f0f0', // Almost white for active, pale gray for inactive
+              fontWeight: 'normal', // Consistent font weight
+              border: '1px solid #ccc', // Consistent border
+              borderRadius: '4px', // Consistent border radius
+              padding: '5px 10px', // Consistent padding
+              boxShadow: 'none', // Explicitly remove bevel
+              cursor: 'pointer', // Ensure cursor indicates interactivity
+            }}
+          >
             Concept
           </button>
-          <button onClick={() => setCurrentView('editor')} disabled={currentView === 'editor'}>
+          <button onClick={() => setCurrentView('editor')} 
+             style={{
+               // Apply styles based on active state
+              color: currentView === 'editor' ? '#ff9800' : '#333', // Orange text for active, dark gray for inactive
+              background: currentView === 'editor' ? '#ffffff' : '#f0f0f0', // Almost white for active, pale gray for inactive
+              fontWeight: 'normal', // Consistent font weight
+              border: '1px solid #ccc', // Consistent border
+              borderRadius: '4px', // Consistent border radius
+              padding: '5px 10px', // Consistent padding
+              boxShadow: 'none', // Explicitly remove bevel
+              cursor: 'pointer', // Ensure cursor indicates interactivity
+            }}
+          >
             Editor
           </button>
         </div>
@@ -459,6 +756,7 @@ function App() {
       {currentView === 'concept' && renderConceptView()}
       {currentView === 'scripting' && renderScriptingView()}
       {showApiKeySettings && renderApiKeySettings()}
+      {showPromptSettingsModal && renderPromptSettingsModal()}
     </div>
   );
 }

@@ -1,0 +1,24 @@
+{
+  "name": "milkdown-experiment",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@milkdown/core": "^7.10.3",
+    "@milkdown/ctx": "^7.10.3",
+    "@milkdown/plugin-history": "^7.10.4",
+    "@milkdown/preset-commonmark": "^7.10.3",
+    "@milkdown/react": "^7.10.3",
+    "@milkdown/theme-nord": "^7.10.3",
+    "@milkdown/utils": "^7.10.3",
+    "@vitejs/plugin-react": "^4.4.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "vite": "^6.3.5"
+  }
+}

@@ -53,6 +53,30 @@
 *   `[ ]` Integrate generation results into the media bin/timeline.
 *   `[ ]` Implement mechanism for re-generating clips.
 
+## Phase 3B: LLM Integration - Scripting (Iterative)
+
+*   `[x]` Initial Anthropic (Claude) API call setup for script generation.
+*   `[x]` System message implemented for initial script generation (Markdown output).
+*   `[x]` Basic Markdown rendering in UI for generated scripts.
+*   `[x]` Basic API Key management UI (Anthropic key input, save, load via electron-store).
+*   `[x]` API Key validation on save (for Anthropic).
+*   `[ ]` **Google Gemini Integration (Python backend, API Key UI & validation, IPC).**
+*   `[ ]` **OpenAI Integration (Python backend, API Key UI & validation, IPC).**
+*   `[x]` **Model Selection UI in Scripting View** (Dropdown to choose Anthropic/Gemini/OpenAI models).
+*   `[ ]` Refine error handling and user feedback for all LLM calls.
+*   `[ ]` **Design and Implement Scripting View - Phase 1 (Claude-like prominent prompt, no editor, skip/upload options).**
+*   `[-]` **Develop Scripting View - Phase 2 (Milkdown editor with bottom prompt area - current Milkdown experiment).**
+    *   `[-]` Layout: Milkdown editor fills majority of screen, prompt area minimal at bottom.
+    *   `[ ]` Implement undo/redo functionality (likely via `@milkdown/plugin-history`).
+    *   `[ ]` Implement a visible toolbar for common Markdown formatting operations.
+    *   `[ ]` Implement user-configurable max height for the prompt input area.
+    *   `[ ]` Define AI interaction model (chat vs. direct edit, user toggle, etc.).
+*   `[ ]` (Future) Implement canvas-style script editor with AI-assisted inline editing (requires new system message for editing tasks).
+*   `[ ]` (Future) Allow user to customize system messages or select personas.
+*   `[x]` **Tech Debt/Optimization:** Anthropic API key validation in `App.jsx` and `python_server/main.py` is slow. Investigate using a faster/lighter API call for validation. (Marking as [x] since we identified it, though fix is pending)
+*   `[-]` UI: Implement rich text editor (e.g., Milkdown experiment) for script editing.
+*   `[ ]` AI: Explore AI co-writing features (suggestions, summarization, plot points).
+
 ## Phase 4: Further Enhancements (Future)
 
 *   `[ ]` AI Image-to-Video Generation.
@@ -74,3 +98,20 @@
 ## Known Issues / Blockers
 
 *   *(None currently)* 
+
+## UI: Implement the actual image generation modal/panel for Concept View Assets.
+
+## UI: Implement the actual image generation modal/panel for Moodboard.
+
+### Scripting View
+
+-   [x] Backend: Basic script generation endpoint (`/generate-script`).
+-   [x] Backend: Support for Anthropic Claude 3.5 Sonnet and Haiku models.
+-   [x] Backend: Support for Google Gemini 2.5 Pro (Preview) and Flash (Preview) models.
+-   [x] UI: Textarea for script prompt input.
+-   [x] UI: Button to trigger script generation.
+-   [x] UI: Display area for the generated script (currently using ReactMarkdown).
+-   [x] UI: Model selection dropdown for script generation.
+-   [ ] **Tech Debt/Optimization:** Anthropic API key validation in `App.jsx` and `python_server/main.py` is slow. Investigate using a faster/lighter API call for validation.
+-   [ ] UI: Implement rich text editor (e.g., Quill as per `tech_stack_and_frameworks.md`) for script editing.
+-   [ ] AI: Explore AI co-writing features (suggestions, summarization, plot points). 

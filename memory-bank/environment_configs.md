@@ -24,10 +24,21 @@ For connecting to external LLM services, API keys are required. These keys shoul
     *   **Linux/macOS (Persistent):** Add the `export` command to your shell's startup file (e.g., `~/.bashrc`, `~/.zshrc`, `~/.profile`) and then source it or open a new terminal.
 *   **Usage:** The Python backend (`python_server/main.py`) will attempt to read this environment variable to authenticate with the Anthropic API.
 
-**2. Google Gemini API Key (Future)**
+**2. Google Gemini API Key**
 
-*   **Environment Variable Name:** `GOOGLE_API_KEY` (or `GEMINI_API_KEY` - TBD)
+*   **Environment Variable Name:** `GOOGLE_API_KEY`
 *   **How to Set:** Similar to Anthropic.
+    *   **Windows (PowerShell - for the current session):**
+        ```powershell
+        $env:GOOGLE_API_KEY="your_actual_google_api_key_here"
+        ```
+    *   **Windows (System-wide - GUI):** Search for "environment variables", edit system environment variables, and add `GOOGLE_API_KEY` with your key as its value.
+    *   **Linux/macOS (bash/zsh - for the current session):**
+        ```bash
+        export GOOGLE_API_KEY="your_actual_google_api_key_here"
+        ```
+    *   **Linux/macOS (Persistent):** Add the `export` command to your shell's startup file (e.g., `~/.bashrc`, `~/.zshrc`, `~/.profile`).
+*   **Usage:** The Python backend (`python_server/main.py`) will attempt to read this environment variable to authenticate with the Google Gemini API if a key is not provided directly through the application UI.
 
 **3. OpenAI API Key (Future)**
 

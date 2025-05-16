@@ -25,7 +25,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generateLlmScript: (data) => ipcRenderer.invoke('llm-generate-script', data),
   saveApiKey: (data) => ipcRenderer.send('save-api-key', data), // send for save, no response needed by UI beyond confirmation
   getApiKey: (serviceName) => ipcRenderer.invoke('get-api-key', serviceName),
-  validateApiKey: (data) => ipcRenderer.invoke('validate-api-key', data)
+  validateApiKey: (data) => ipcRenderer.invoke('validate-api-key', data),
+  validateAnthropicApiKey: (args) => ipcRenderer.invoke('validate-anthropic-key', args),
+  validateGoogleApiKey: (args) => ipcRenderer.invoke('validate-google-key', args),
+  onOpenApiKeySettings: (callback) => ipcRenderer.on('open-api-key-settings', callback)
 });
 
 // You can also expose other Node.js modules or utility functions here if needed,

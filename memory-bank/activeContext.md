@@ -20,11 +20,23 @@
 *   Review and refine the initial Memory Bank documents.
 *   Set up the basic Electron project structure.
 *   Set up React within the Electron project.
-*   Begin research into specific open-source, locally runnable AI models for video generation (e.g., Stable Video Diffusion).
-*   Initialize the Git repository.
+*   Basic script generation with Anthropic Claude (via external API) is now functional in the Scripting View, including Markdown rendering.
+*   API Key input and storage (via UI Settings for Anthropic) is functional.
+
+**Immediate Next Steps for LLM Integration (Scripting View):**
+*   **Google Gemini Integration:**
+    *   Implement Python backend logic to call Google Gemini API (e.g., Gemini 1.5 Pro, Gemini 1.5 Flash).
+    *   Add UI in API Key Settings for Google API Key.
+    *   Update `main.js` and `preload.js` for Gemini key validation and API calls.
+*   **Model Selection UI:**
+    *   Add a dropdown/selector in the Scripting View to allow the user to choose which LLM (and specific model variant like Claude 3.5 Sonnet, Gemini 1.5 Pro, etc.) to use for script generation.
+    *   The `handleGenerateScript` function in `App.jsx` will need to pass the selected model identifier.
+*   **Refine Error Handling & User Feedback** for LLM calls across different models.
+*   **UI for Scripting View:** Flesh out the initial prompt area and script display beyond basic placeholders.
 
 ## 4. Open Questions/Considerations
 
-*   Viability and performance of specific local AI models on target hardware.
-*   Best approach for communication between Electron Main process and Python backend (local API vs. direct script execution).
-*   Detailed structure for the project file format. 
+*   Viability and performance of specific local AI models on target hardware (for future local LLM integration).
+*   Best approach for communication between Electron Main process and Python backend if Python needs to *initiate* communication or send progress updates (currently Renderer initiates all).
+*   Detailed structure for the project file format (for saving scripts, storyboard data etc.).
+*   Specifics of the sandbox/canvas editor for script refinement. 

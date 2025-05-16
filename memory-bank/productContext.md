@@ -23,6 +23,27 @@ An integrated desktop application that combines AI video generation capabilities
 *   **Local Control:** Empower users by enabling the use of locally run AI models, offering more control and potentially lower costs compared to purely cloud-based services.
 *   **Comprehensive Tooling (Long-term):** Evolve towards a powerful editor including features like transitions, effects, titles, audio mixing, and advanced AI controls (camera movement, style consistency), alongside AI audio/music generation and potentially script/storyboard assistance.
 
+### 3.1 Scripting View - Two-Phase Approach
+
+*   **Phase 1 (New Script Workflow):** 
+    *   Initial state will be a prominent, central prompt input field (similar to Claude's initial console).
+    *   No editor is visible at this stage.
+    *   User is presented with options: "Skip to text editor" button (left), plain text "or", and "Upload Script" button (right).
+    *   This phase is for generating a new script from a detailed prompt.
+*   **Phase 2 (Script Editing & Revision Workflow):**
+    *   This phase is entered after a script is generated, skipped to, or uploaded.
+    *   Features a primary Markdown editor (e.g., Milkdown) taking up the majority of the screen.
+    *   A smaller, persistent prompt input area at the bottom for AI-assisted edits, revisions, or additions to the existing script. The prompt input area should auto-grow from a minimal height but have a user-configurable 'max height'. If content exceeds this max height, the area should scroll internally. The input cursor/line should remain fixed at the bottom of the prompt area, with previous lines scrolling upwards.
+    *   This phase will include a visible toolbar for common formatting operations (bold, italic, lists, headings, etc.) to support users unfamiliar with Markdown.
+    *   Implement robust undo/redo functionality.
+
+### 3.2 AI Interaction Design Principles (Scripting View & Beyond)
+*   Explore AI interaction models:
+    *   Chat-first response then optional edits.
+    *   Direct edits by AI.
+    *   User toggle for AI interaction mode (chat vs. edit).
+*   Default behavior for script revisions: AI responds in a chat-like interface first, then (optionally or upon confirmation) makes edits to the document.
+
 ## 4. Why Now?
 
 The increasing quality and availability of open-source AI models for video and audio generation make integrating these capabilities directly into an editing workflow more feasible and desirable. 

@@ -1,0 +1,146 @@
+/* Basic CSS - can be expanded later */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Prevent body from ever scrolling */
+
+  /* Nord color palette as CSS variables - Dark Mode Defaults */
+  /* Matching AI Video Editor App Dark Theme */
+  --color-nord0: #181818; /* Main app background - Example, replace with actual */
+  --color-nord1: #2A2A2A; /* Slightly lighter elements - Example */
+  --color-nord2: #3C3C3C; /* Even lighter elements / borders - Example */
+  --color-nord3: #4C566A; /* Accent / secondary text - Kept from Nord for now */
+  --color-nord4: #D8DEE9; /* Main text color - Light gray */
+  --color-nord5: #E5E9F0; /* Lighter text / secondary elements */
+  --color-nord6: #ECEFF4; /* Lightest elements / hover states */
+  
+  /* Frost colors - can be used for accents */
+  --color-nord7: #8FBCBB;
+  --color-nord8: #88C0D0;
+  --color-nord9: #81A1C1;
+  --color-nord10: #5E81AC;
+
+  /* Aurora colors - for highlights, errors, etc. */
+  --color-nord11: #BF616A; /* Red */
+  --color-nord12: #D08770; /* Orange */
+  --color-nord13: #EBCB8B; /* Yellow */
+  --color-nord14: #A3BE8C; /* Green */
+  --color-nord15: #B48EAD; /* Purple */
+
+  /* Apply base background and text color for the page */
+  background-color: var(--color-nord0);
+  color: var(--color-nord4);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body[data-theme="light"] {
+  /* Redefine Nord-like variables for Light Mode */
+  --color-nord0: #FFFFFF; /* Lightest background for light mode */
+  --color-nord1: #F0F0F0; /* Lighter gray elements */
+  --color-nord2: #E0E0E0; /* Light gray elements/borders */
+  --color-nord3: #555555; /* Darker text for accents */
+  --color-nord4: #212121; /* Main text color - very dark gray */
+  --color-nord5: #424242; /* Secondary dark text */
+  --color-nord6: #616161; /* Tertiary dark text / darker elements */
+
+  /* Frost and Aurora can be adjusted if they don't fit the light theme well */
+
+  background-color: var(--color-nord0);
+  color: var(--color-nord4);
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Make root take full viewport height */
+  overflow: hidden; /* Prevent body scrollbars if content overflows root */
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Allow app-layout to fill #root */
+  min-height: 0; /* Necessary for flex-grow to work correctly in a nested flex container */
+}
+
+.app-header {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--color-nord2);
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.app-header h1 {
+  display: inline-block;
+  margin: 0;
+  font-size: 1.5em;
+}
+
+/* New wrapper for the Milkdown editor component to control its flex behavior */
+.milkdown-editor-wrapper {
+  flex-grow: 1; 
+  min-height: 0; 
+  display: flex; 
+  flex-direction: column;
+  background-color: var(--color-nord1); /* Editor background color on the wrapper */
+  padding: 15px; /* Padding on the wrapper */
+  overflow-y: auto; /* Allow wrapper to scroll if content overflows badly, though .milkdown should handle it */
+}
+
+/* This class is applied by Milkdown to its root editor div */
+.milkdown {
+  background: transparent !important; /* Make actual milkdown div transparent */
+  color: var(--color-nord4) !important; /* Text color still applied here */
+  margin: 0; 
+  flex-grow: 1; 
+  /* overflow-y: auto; */ /* Scroll handled by wrapper or .ProseMirror */
+  min-height: 0; 
+  height: 100%; 
+  display: flex; /* Ensure it's a flex container for .ProseMirror if needed */
+  flex-direction: column;
+}
+
+/* Target the ProseMirror editable area specifically */
+.milkdown .ProseMirror {
+  flex-grow: 1; /* Make ProseMirror content area fill .milkdown div */
+  height: 100%; /* Ensure it takes full height of its parent */
+  overflow-y: auto; /* Allow internal scrolling for content */
+  outline: none; /* Remove default focus outline if not desired from theme */
+}
+
+/* Placeholder for the new prompt input area */
+.prompt-input-area {
+  background-color: var(--color-nord1);
+  padding: 10px;
+  border-top: 1px solid var(--color-nord2);
+  flex-shrink: 0; 
+}
+
+.prompt-input-area textarea {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-nord3);
+  border-radius: 4px;
+  background-color: var(--color-nord0); 
+  color: var(--color-nord4);
+  resize: none; 
+  font-size: 1em;
+  line-height: 1.4;
+  min-height: calc(1.4em + 20px); 
+  max-height: 20vh; 
+  overflow-y: auto; 
+}
+
+/* The imported @milkdown/theme-nord/style.css will use its own variables or Tailwind. 
+   By redefining --color-nordX variables above based on data-theme, 
+   the theme should adapt. */
+
+/* इंश्योर मिल्कडाउन एडिटर इटसेल्फ पिक्स अप द थीम वेरिएबल्स। 
+   द @milkdown/theme-nord/style.css शुड आइडियली यूज दीज सीएसएस वेरिएबल्स। 
+   इफ नॉट, मोर स्पेसिफिक ओवरराइड्स माइट बी नीडेड फॉर .milkdown एलिमेंट्स। */
+
+/* Ensure there are no other .milkdown rules below this point */ 

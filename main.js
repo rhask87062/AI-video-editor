@@ -150,33 +150,18 @@ app.whenReady().then(() => {
     }
   });
 
-  // IPC handler for LLM script generation
-  ipcMain.handle('llm-generate-script', async (event, { prompt, modelIdentifier }) => {
-    console.log(`Main process: Received llm-generate-script request for model: ${modelIdentifier}`);
-    if (!prompt || !modelIdentifier) {
-      return { success: false, error: 'Prompt and modelIdentifier are required.' };
-    }
+  // IPC handler for script generation
+  ipcMain.handle('llm-generate-script', async (event, { prompt, modelIdentifier, apiKey, systemPrompt }) => {
+    console.log(`Main process: Received llm-generate-script request for model: ${modelIdentifier}, systemPrompt provided: ${!!systemPrompt}`);
     try {
-      let apiKey = null;
-      if (modelIdentifier.startsWith('claude')) {
-        apiKey = store.get('ANTHROPIC_API_KEY');
-      } else if (modelIdentifier.startsWith('gpt')) {
-        apiKey = store.get('OPENAI_API_KEY'); // Placeholder for future
-      } else if (modelIdentifier.startsWith('gemini')) {
-        apiKey = store.get('GOOGLE_API_KEY'); // Placeholder for future
-      }
-
-      if (!apiKey) {
-        console.warn(`API key for ${modelIdentifier} not found in store. Python backend will try environment variables.`);
-        // We could optionally return an error here if we want to enforce UI input
-        // return { success: false, error: `API key for ${modelIdentifier} not set in settings.` };
-      }
-
-      const response = await axios.post('http://127.0.0.1:8000/generate-script', {
+      const body = {
         prompt: prompt,
         model_identifier: modelIdentifier,
-        api_key: apiKey // Pass the retrieved API key (or null if not found)
-      });
+        api_key: apiKey || null, // Ensure apiKey is null if not provided, not undefined
+        system_prompt: systemPrompt || null // Pass system_prompt, ensure null if not provided
+      };
+      // console.log("Sending to Python backend:", body);
+      const response = await axios.post('http://127.0.0.1:8000/generate-script', body);
       return response.data;
     } catch (error) {
       console.error('Error calling Python /generate-script endpoint:', error.message);
@@ -223,6 +208,31 @@ app.whenReady().then(() => {
         return { success: false, error: 'No response from Python validation endpoint.' };
       } else {
         return { success: false, error: `Error setting up validation request: ${error.message}` };
+      }
+    }
+  });
+
+  // IPC handler for validating Google API key
+  ipcMain.handle('validate-google-key', async (event, { apiKey }) => {
+    console.log('Main process: Received validate-google-key request');
+    if (!apiKey) {
+      return { success: false, error: 'API Key not provided for validation.' };
+    }
+    try {
+      // Assuming the Python server is running on http://127.0.0.1:8000
+      // And has an endpoint /validate-google-key
+      const response = await axios.post('http://127.0.0.1:8000/validate-google-key', {
+        api_key: apiKey
+      });
+      return response.data; // This should be { success: true/false, message/error: '...' }
+    } catch (error) {
+      console.error('Error calling Python /validate-google-key endpoint:', error.message);
+      if (error.response) {
+        return { success: false, error: `Google Key Validation Server error: ${error.response.status}`, data: error.response.data };
+      } else if (error.request) {
+        return { success: false, error: 'No response from Python for Google key validation. Is the Python server running?' };
+      } else {
+        return { success: false, error: `Error setting up Google key validation request: ${error.message}` };
       }
     }
   });
