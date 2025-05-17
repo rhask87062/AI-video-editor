@@ -39,4 +39,5 @@
 *   Viability and performance of specific local AI models on target hardware (for future local LLM integration).
 *   Best approach for communication between Electron Main process and Python backend if Python needs to *initiate* communication or send progress updates (currently Renderer initiates all).
 *   Detailed structure for the project file format (for saving scripts, storyboard data etc.).
-*   Specifics of the sandbox/canvas editor for script refinement. 
+https://github.com/marktext/marktext*   Specifics of the sandbox/canvas editor for script refinement.
+*   **Chat History Management for Scripting View:** Explored the idea of adding a "New Chat/Clear History" button in the Scripting View's chat panel. This would clear the visible context for the AI and trigger a background summarization of the cleared chat, focusing on writing-specific details (themes, plot points, character notes, style choices). The goal is to create a lighter-weight, persistent "project memory" for the AI, improving long-term context without overwhelming the immediate prompt, similar to Cursor's memory system but tailored for creative writing. (Further planning/clarification needed on UI specifics, summarization technique, and integration with overall project memory.) 
