@@ -1,25 +1,13 @@
 # Active Context: AI Video Editor
 
-**Date:** 2024-07-28
+**Date:** 2024-07-27
 
 ## 1. Current Focus
 
-*   **Milkdown Experiment (`milkdown-experiment/` directory):** Refining AI interaction within a Milkdown-based script editor.
-    *   Current Sub-focus: Defining how AI responses are delivered (chat, direct editor modification, or both).
-    *   **On Hold (Milkdown Experiment - Prompt Input UI):**
-        *   User-configurable draggable resizer for prompt input height.
-        *   Consistent 50% vertical screen space expansion for unlocked prompt input.
-        *   Correct visual state for the lock/unlock icon for prompt input height.
+*   Project Initialization: Setting up the foundational structure, defining initial scope, and choosing the core platform (Desktop App via Electron).
+*   Memory Bank Creation: Drafting the initial core Memory Bank documents (`projectbrief.md`, `productContext.md`, `systemPatterns.md`, `techContext.md`, `activeContext.md`, `progress.md`).
 
 ## 2. Recent Changes/Decisions
-
-*   **Milkdown Experiment:**
-    *   Implemented basic Anthropic Claude API calls within the experiment.
-    *   Added UI for API key input (using localStorage for persistence in experiment).
-    *   Implemented UI for selecting LLM models (Claude, Gemini placeholders).
-    *   Implemented editable system prompts for "Chat" and "Revise" actions, stored in localStorage.
-    *   Simplified prompt input height to auto-expand (10%-50% window height) with a lock toggle, removing draggable resizer due to interaction issues.
-    *   Decision: For "Revise" actions, AI will provide suggestions/text in the chat panel. Direct modification of Milkdown editor by AI is a future consideration.
 
 *   Decided on a Desktop Application using Electron to better facilitate local AI model integration and performance.
 *   Outlined initial target features: AI video generation (text/image-to-video), basic timeline editing (stitching, trimming), audio track support.
@@ -28,11 +16,6 @@
 *   Identified core technology stack components (Electron, JS/TS Frontend (React), Python Backend).
 
 ## 3. Next Steps
-
-*   **Milkdown Experiment:**
-    *   Refine `editSystemPromptText` to guide AI to provide copyable Markdown in chat for script revisions.
-    *   Thoroughly test current AI chat response flow with new system prompt.
-    *   Begin planning for how AI could provide more structured data for potential future direct editor integration (e.g., diffs, commands).
 
 *   Review and refine the initial Memory Bank documents.
 *   Set up the basic Electron project structure.
@@ -52,10 +35,6 @@
 *   **UI for Scripting View:** Flesh out the initial prompt area and script display beyond basic placeholders.
 
 ## 4. Open Questions/Considerations
-
-*   **Milkdown Experiment:** Best strategy for AI to output changes for easy application by user (e.g., specific Markdown formatting in chat, copy buttons).
-*   How to eventually integrate the `milkdown-experiment` back into the main `AI-video-editor` application and its Electron IPC for API keys.
-*   **Future AI Revision System (Milkdown Experiment):** Plan for a more token-efficient revision system where users can highlight text for specific AI edits, rather than always sending/receiving the full script. This is to manage potential API costs with large documents. The current full-script replacement for revisions is a temporary measure for simplicity.
 
 *   Viability and performance of specific local AI models on target hardware (for future local LLM integration).
 *   Best approach for communication between Electron Main process and Python backend if Python needs to *initiate* communication or send progress updates (currently Renderer initiates all).

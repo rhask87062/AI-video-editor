@@ -75,16 +75,6 @@
     *   `[ ]` Define AI interaction model (chat-first response then optional edits vs. direct edits; consider user toggle. AI needs read/write access to editor content).
     *   `[ ]` UI/UX: Implement prompt submission logic: Enter for newline, Ctrl+Enter (or Cmd+Enter) to send.
     *   `[ ]` UI: Add a visible 'Send' button for the prompt input area.
-    *   
-    *   **On Hold Features (Milkdown Experiment - Prompt Input Area):**
-        *   `[-]` Prompt Input Height: User-configurable draggable resizer for `lockedPromptHeight`. (Issues with reliable drag interaction and visual cues led to simplification).
-        *   `[-]` Prompt Input Height: Current simplified auto-expand (unlocked state) does not consistently reach the intended 50% of available vertical screen space even with sufficient content. (Root cause likely CSS parent constraints or JS calculation nuance; console logs requested for further diagnosis).
-        *   `[-]` Prompt Input Lock Icon: Visual state of the lock icon (open/closed padlock) needs to be definitively corrected to match user expectation of representing the *current* state of the stretch feature (i.e., show Unlocked icon when auto-stretching, Lock icon when height is fixed).
-
-*   `[ ]` **Future - AI Script Revision Enhancements (Milkdown Experiment):**
-    *   `[ ]` Implement "highlight to revise": Allow user to select specific text in Milkdown editor. AI receives only selected text (or selected text + limited surrounding context) for revision, and only the selection is replaced. This is to optimize token usage and API costs for large scripts compared to sending/receiving the full script for every revision.
-    *   `[ ]` Investigate methods for the AI to output structured changes (e.g., diffs, specific commands) for more precise application of revisions, as an alternative to full text replacement.
-
 *   `[ ]` (Future) Implement canvas-style script editor with AI-assisted inline editing (requires new system message for editing tasks).
 *   `[ ]` (Future) Allow user to customize system messages or select personas.
 *   `[x]` **Tech Debt/Optimization:** Anthropic API key validation in `App.jsx` and `python_server/main.py` is slow. Investigate using a faster/lighter API call for validation. (Marking as [x] since we identified it, though fix is pending)

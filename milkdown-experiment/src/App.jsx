@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Editor, rootCtx, defaultValueCtx } from '@milkdown/core';
 import { nord } from '@milkdown/theme-nord';
-import { Milkdown, MilkdownProvider, useEditor, useInstance } from '@milkdown/react';
+import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react';
 import { commonmark } from '@milkdown/preset-commonmark';
 import { history } from '@milkdown/plugin-history';
-import { replaceAll, getMarkdown } from '@milkdown/utils';
 import '@milkdown/theme-nord/style.css';
 import { callClaudeApi } from './api'; // Import the new API function
+import { replaceAll } from '@milkdown/utils';
 // import { Lock, Unlock } from 'lucide-react'; // Example icons, install if needed or use SVGs/text -- Now using text
 
 // SVG Icon Components for Padlock - Body Filled, Shackle Outline
@@ -42,96 +42,41 @@ const SCRIPT_MODELS = [
 const DEFAULT_CHAT_SYSTEM_PROMPT = "You are a helpful AI assistant. The user is working on a script in an editor. Respond to their questions and engage in conversation about their script. All your responses should be directed to the chat panel.";
 const DEFAULT_EDIT_SYSTEM_PROMPT = "You are an AI script editing assistant. The user will provide instructions or text they want to change in their script. Your task is to analyze their request and provide the modified text or a description of the changes directly in the chat panel. Do not attempt to directly edit any document. For example, if the user says 'Change scene 1 to be at night', you might respond in the chat with: 'Okay, I've updated scene 1 to be at night. Here's the revised description: [revised text here]'. Or if they say 'Make this dialogue more tense', you could suggest new dialogue options in the chat.";
 
-// Re-introduce EditorComponent with a ref to expose actions
-const EditorComponent = React.forwardRef((props, ref) => {
-  console.log("EditorComponent: Rendering");
-
-  const { loading, anError, editor } = useEditor((root) => {
-    console.log("EditorComponent: useEditor - factory function running");
-    return Editor.make()
+// Modified EditorComponent to report when its editor instance is ready
+const EditorComponent = ({ onEditorReady }) => {
+  const { editor, loading } = useEditor((root) => 
+    Editor.make()
       .config((ctx) => {
-        console.log("EditorComponent: useEditor - config running");
         ctx.set(rootCtx, root);
-        ctx.set(defaultValueCtx, props.initialValue || initialMarkdown);
+        ctx.set(defaultValueCtx, initialMarkdown);
       })
       .use(nord)
       .use(commonmark)
-      .use(history());
-  });
-
-  // const [editorInstance, setEditorInstance] = useState(null); // Not strictly needed if directly using editor from useEditor
-  const { getInstance } = useInstance(); 
+      .use(history)
+  );
+  const editorReadyCalledRef = useRef(false);
 
   useEffect(() => {
-    console.log("EditorComponent: useEffect[loading, anError, getInstance] - Fired. Loading:", loading, "Error:", anError);
-    if (!loading && !anError) {
-      const currentInstance = getInstance();
-      console.log("EditorComponent: useEffect - Editor instance obtained:", !!currentInstance);
-      // setEditorInstance(currentInstance); // Not setting state here directly
-    } else if (anError) {
-        console.error("EditorComponent: useEffect - Editor creation error state:", anError);
-    }
-  }, [loading, anError, getInstance]);
-
-  React.useImperativeHandle(ref, () => ({
-    getMarkdownContent: () => {
-      const currentEditor = editor.current(); // Get current editor instance directly
-      if (currentEditor) {
-        try {
-          console.log("EditorComponent: ref.getMarkdownContent - Calling action");
-          return currentEditor.action(getMarkdown());
-        } catch (e) {
-          console.error("Error getting markdown from EditorComponent via ref:", e);
-          return '';
-        }
+    console.log("[EditorComponent Effect - AGGRESSIVE CHECK] loading:", loading, "has editor ref:", !!editor, "has editor.current:", !!(editor && editor.current), "ready called ref:", editorReadyCalledRef.current);
+    
+    // AGGRESSIVE CHECK: If editor.current exists and we haven't called onEditorReady yet, try calling it.
+    if (editor && editor.current && !editorReadyCalledRef.current) {
+      if (loading) {
+        console.warn("[EditorComponent Effect - AGGRESSIVE CHECK] 'loading' is TRUE, but editor.current exists. Attempting to call onEditorReady anyway.");
       }
-      console.warn("EditorComponent: ref.getMarkdownContent - Editor not available");
-      return '';
-    },
-    replaceAllMarkdown: (newMarkdown) => {
-      const currentEditor = editor.current(); // Get current editor instance directly
-      if (currentEditor) {
-        try {
-          console.log("EditorComponent: ref.replaceAllMarkdown - Calling action with:", newMarkdown.substring(0,50) + "...");
-          currentEditor.action(replaceAll(newMarkdown));
-        } catch (e) {
-          console.error("Error setting markdown in EditorComponent via ref:", e);
-        }
-      } else {
-        console.warn("EditorComponent: ref.replaceAllMarkdown - Editor not available");
-      }
+      console.log("[EditorComponent Effect - AGGRESSIVE CHECK] Editor instance available (loading state: " + loading + "). Calling onEditorReady with:", editor.current);
+      onEditorReady(editor.current);
+      editorReadyCalledRef.current = true; 
+    } else if (!editorReadyCalledRef.current) {
+      // Log other states if not ready under this aggressive check
+      if (loading) console.log("[EditorComponent Effect - AGGRESSIVE CHECK] Still loading (and editor.current might not be available or already called)...");
+      else if (!editor) console.log("[EditorComponent Effect - AGGRESSIVE CHECK] Editor ref object itself is not yet available.");
+      else if (!editor.current) console.log("[EditorComponent Effect - AGGRESSIVE CHECK] Editor.current (the instance) is not yet available.");
     }
-  }), [editor]); // Add editor to dependency array of useImperativeHandle
-
-  // Timeout for loading
-  const [loadTimeout, setLoadTimeout] = useState(false);
-  useEffect(() => {
-    if (loading) {
-      const timer = setTimeout(() => {
-        setLoadTimeout(true);
-        console.warn("EditorComponent: Load timeout reached after 15 seconds.");
-      }, 15000); // 15 seconds timeout
-      return () => clearTimeout(timer);
-    } else {
-      setLoadTimeout(false); // Reset timeout if loading completes
-    }
-  }, [loading]);
-
-  if (anError) {
-    console.error("EditorComponent: Rendering error state.", anError);
-    return <div style={{padding: '20px', color: 'red'}}>Milkdown Editor Error: {anError.message} (Check console for more details)</div>;
-  }
-  if (loading && !loadTimeout) {
-    console.log("EditorComponent: Rendering loading state...");
-    return <div style={{padding: '20px'}}>Initializing editor plugins... Please wait. (This might take a moment)</div>; // More descriptive message
-  }
-  if (loadTimeout) {
-    return <div style={{padding: '20px', color: 'orange'}}>Editor is taking too long to load. Please try refreshing the page. If the problem persists, check the console.</div>;
-  }
-  
-  console.log("EditorComponent: Rendering Milkdown component.");
+  }, [loading, editor, onEditorReady]); // Keep dependencies, effect should re-run if these change
+ 
   return <Milkdown />;
-});
+};
 
 function App() {
   const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
@@ -150,7 +95,7 @@ function App() {
   const [isPromptHeightLocked, setIsPromptHeightLocked] = useState(false);
   const [currentTextareaHeight, setCurrentTextareaHeight] = useState('auto'); // Store actual height before lock
   const promptInputAreaRef = useRef(null);
-  const editorActionsRef = useRef(null); // Ref for EditorComponent actions
+  const [editorInstance, setEditorInstance] = useState(null);
 
   // Load API key, system prompts, and lock state from localStorage
   useEffect(() => {
@@ -226,71 +171,61 @@ function App() {
     setShowPromptSettingsModal(false);
   };
 
-  const getFullEditorMarkdown = () => {
-    return editorActionsRef.current?.getMarkdownContent() || '';
-  };
-
-  const updateFullEditorMarkdown = (newMarkdown) => {
-    editorActionsRef.current?.replaceAllMarkdown(newMarkdown);
-  };
-
   const handleChatSend = async () => {
     if (!promptText.trim()) return;
+
+    if (!editorInstance) {
+      console.error("handleChatSend: Editor instance not available for AI response. Please wait for editor to load.");
+      setChatMessages(prev => [...prev, {sender: 'ai', text: "Editor not ready, please try again shortly."}]);
+      return;
+    }
     const userMessage = { sender: 'user', text: promptText };
     setChatMessages(prevMessages => [...prevMessages, userMessage]);
     setIsGeneratingScript(true);
     if (!apiKey.trim()) {
-      const aiMessage = { sender: 'ai', text: "API Key is missing. Please enter it below the chat/editor area." };
-      setChatMessages(prevMessages => [...prevMessages, aiMessage]);
+      const errorMsg = "API Key is missing.";
+      editorInstance.action(replaceAll(errorMsg));
       setIsGeneratingScript(false);
-      if (!isChatPanelOpen) setIsChatPanelOpen(true);
       return;
     }
-
-    const currentEditorContent = getFullEditorMarkdown();
-    const contextForAI = `Current Script Content:\n\n${currentEditorContent}\n\nUser Request: ${promptText}`;
-    console.log(`Sending to AI for CHAT: "${contextForAI}" with model: ${selectedScriptModel}`);
-    
-    const result = await callClaudeApi(contextForAI, apiKey, selectedScriptModel, chatSystemPromptText);
-    let aiResponseText;
-    if (result.success) aiResponseText = result.script;
-    else { aiResponseText = `Error: ${result.error}`; if (result.raw_error) console.error("Raw AI Error:", result.raw_error); }
-    const aiMessage = { sender: 'ai', text: aiResponseText };
-    setChatMessages(prevMessages => [...prevMessages, aiMessage]);
+    console.log(`Sending to AI for chat: "${promptText}" with model: ${selectedScriptModel}`);
+    const systemPromptForEditor = "You are an AI assistant. The user has made a request. Generate a response that is suitable to be directly placed into a markdown editor. Output only the content for the editor.";
+    const result = await callClaudeApi(promptText, apiKey, selectedScriptModel, systemPromptForEditor);
+    let aiResponseTextForEditor;
+    if (result.success) aiResponseTextForEditor = result.script;
+    else { aiResponseTextForEditor = `Error from AI: ${result.error}`; if (result.raw_error) console.error("Raw AI Error:", result.raw_error); }
+    editorInstance.action(replaceAll(aiResponseTextForEditor));
     setIsGeneratingScript(false);
-    if (!isChatPanelOpen) setIsChatPanelOpen(true);
+    if (!isChatPanelOpen && chatMessages.length > 0) {
+        // setIsChatPanelOpen(true); // Or maybe not, if response is in editor.
+    }
     setPromptText('');
   };
 
   const handleEditScriptRequest = async () => {
     if (!promptText.trim()) return;
+
+    if (!editorInstance) {
+      console.error("handleEditScriptRequest: Editor instance not available. Please wait for editor to load.");
+      setChatMessages(prev => [...prev, {sender: 'ai', text: "Editor not ready for revise, please try again shortly."}]);
+      return;
+    }
     const userMessage = { sender: 'user', text: `(Revise Request) ${promptText}` };
     setChatMessages(prevMessages => [...prevMessages, userMessage]);
     setIsGeneratingScript(true);
     if (!apiKey.trim()) {
-      const aiMessage = { sender: 'ai', text: "API Key is missing. Please enter it below the chat/editor area." };
-      setChatMessages(prevMessages => [...prevMessages, aiMessage]);
+      const errorMsg = "API Key is missing.";
+      editorInstance.action(replaceAll(errorMsg));
       setIsGeneratingScript(false);
-      if (!isChatPanelOpen) setIsChatPanelOpen(true);
       return;
     }
-
-    const currentEditorContent = getFullEditorMarkdown();
-    const contextForAI = `User instruction for revision: ${promptText}\n\nFull script to revise:\n\n${currentEditorContent}`;
-    console.log(`Sending to AI for REVISE: model: ${selectedScriptModel}`);
-
-    const result = await callClaudeApi(contextForAI, apiKey, selectedScriptModel, newEditSystemPrompt);
-    
-    if (result.success && typeof result.script === 'string') {
-      updateFullEditorMarkdown(result.script);
-      const aiMessage = { sender: 'ai', text: "Script has been revised based on your instruction." };
-      setChatMessages(prevMessages => [...prevMessages, aiMessage]);
-    } else {
-      const errorText = `Error revising script: ${result.error || 'Unknown error'}`;
-      const aiMessage = { sender: 'ai', text: errorText };
-      setChatMessages(prevMessages => [...prevMessages, aiMessage]);
-      if (result.raw_error) console.error("Raw AI Error (Revise Request):", result.raw_error);
-    }
+    console.log(`Request to revise script with: "${promptText}", model: ${selectedScriptModel}`);
+    const systemPromptForEditorEdit = "You are an AI script editing assistant. The user has provided text and an instruction to revise it. Generate the revised text suitable to be directly placed into a markdown editor, replacing the previous content. Output only the revised content for the editor.";
+    const result = await callClaudeApi(promptText, apiKey, selectedScriptModel, systemPromptForEditorEdit);
+    let aiResponseTextForEditor;
+    if (result.success) aiResponseTextForEditor = result.script;
+    else { aiResponseTextForEditor = `Error processing revise request: ${result.error}`; if (result.raw_error) console.error("Raw AI Error (Revise Request):", result.raw_error); }
+    editorInstance.action(replaceAll(aiResponseTextForEditor));
     setIsGeneratingScript(false);
     if (!isChatPanelOpen) setIsChatPanelOpen(true);
     setPromptText('');
@@ -304,6 +239,8 @@ function App() {
   };
   
   const selectedModelName = SCRIPT_MODELS.find(m => m.id === selectedScriptModel)?.name || 'Select Model';
+
+  console.log("[App Render] editorInstance state:", editorInstance);
 
   return (
     <MilkdownProvider>
@@ -324,8 +261,7 @@ function App() {
           )}
 
           <div className="milkdown-editor-wrapper">
-            {/* Render EditorComponent with the ref and pass initial value if needed */}
-            <EditorComponent ref={editorActionsRef} initialValue={initialMarkdown} />
+            <EditorComponent onEditorReady={setEditorInstance} />
           </div>
 
           <button 
@@ -553,19 +489,5 @@ function App() {
     </MilkdownProvider>
   );
 }
-
-// Make sure newEditSystemPrompt is defined (as discussed before)
-const newEditSystemPrompt = `You are an AI script editing assistant. Your task is to revise the user's provided script based on their specific instruction. IMPORTANT: Your entire response will directly replace the user's current script in the editor. Therefore, you MUST output the COMPLETE script, with the requested revisions integrated, as a single block of valid Markdown. Do NOT output only the changed section. Do NOT output any conversational text, apologies, or explanations before or after the Markdown script. Your response should be ONLY the full, revised Markdown script. The user will provide: 1. Their current full script. 2. An instruction for a revision. Your goal is to apply the revision instruction to the full script and return the new, complete Markdown script. Example: If the user's script is:
----
-SCENE 1
-INT. COFFEE SHOP - DAY
-JOHN sits at a table, looking bored.
----
-And the user's instruction is: "Change John to be looking anxious." Your response MUST BE (exactly this Markdown):
----
-SCENE 1
-INT. COFFEE SHOP - DAY
-JOHN sits at a table, looking anxious.
----`;
 
 export default App; 
